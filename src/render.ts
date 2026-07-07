@@ -250,10 +250,12 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .nav-search { display: none; }
 
-/* ---- hero (full-bleed banner) ---- */
+/* ---- hero banner: edge-to-edge on narrow screens, but never wider than the
+   text column (wrap 1140 minus its 20px gutters = 1100) so on a maximized
+   window its left/right edges line up exactly with the body text ---- */
 .hero-banner {
-  display: block; width: 100%; height: auto; aspect-ratio: 1731 / 909;
-  background: #fff;
+  display: block; width: 100%; max-width: 1100px; margin: 0 auto;
+  height: auto; aspect-ratio: 1731 / 909; background: #fff;
 }
 .hero { padding-top: 0; padding-bottom: 8px; }
 .hero-copy { margin: 26px 0 4px; }
