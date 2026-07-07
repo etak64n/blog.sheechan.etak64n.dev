@@ -585,7 +585,7 @@ export function renderIndexPage(
 <section class="hero wrap">
   <p class="eyebrow">// shiichan's daily tech report</p>
   <h1>Shiichan<br>Tech Report</h1>
-  <p class="lede">${esc(SITE_DESCRIPTION)}だよ。むずかしいニュースも、しぃちゃんと一緒ならこわくない!</p>
+  <p class="lede">${esc(SITE_DESCRIPTION)}だよ。むずかしいニュースも、しぃちゃんと一緒ならこわくない！</p>
   <div class="stats">
     <span class="stat">ARTICLES<b>${totalArticles}</b></span>
     <span class="stat">SOURCES<b>${sources.length}</b></span>
@@ -618,7 +618,7 @@ ${
 </div>
 <div class="panel" style="animation-delay:280ms">
   <h2 class="section-title">About</h2>
-  <p class="about-text">テックニュースが大好きな<b>しぃちゃん</b>が、毎日気になった発表をわかりやすく紹介するブログだよ。むずかしい話も、いっしょに読めばこわくない!</p>
+  <p class="about-text">テックニュースが大好きな<b>しぃちゃん</b>が、毎日気になった発表をわかりやすく紹介するブログだよ。むずかしい話も、いっしょに読めばこわくない！</p>
   <a class="panel-more" href="/about">MORE ${icon('arrow-up-right')}</a>
 </div>`
 
@@ -680,7 +680,7 @@ export function renderAboutPage(sources: SourceCount[]): string {
   <article>
     <h1 class="article-title">このブログについて</h1>
     <div class="prose">
-      <p>やっほー、しぃちゃんだよ!「${esc(SITE_TITLE)}」に来てくれてありがとう。ここは、しぃちゃんが気になったテックニュースを毎日紹介するブログなの。いまは ${sources.length} つのサイトを追いかけて、${totalArticles} 本の記事を公開中!</p>
+      <p>やっほー、しぃちゃんだよ！「${esc(SITE_TITLE)}」に来てくれてありがとう。ここは、しぃちゃんが気になったテックニュースを毎日紹介するブログなの。いまは ${sources.length} つのサイトを追いかけて、${totalArticles} 本の記事を公開中！</p>
       <h2>しぃちゃんってどんな子?</h2>
       <p>新しい技術の発表を追いかけるのが大好きで、AWS や Cloudflare、OpenAI、Anthropic のニュースを毎日チェックしてるよ。むずかしい発表を「結局なにがすごいの?」ってところまで噛みくだいて伝えるのが得意なの。元気いっぱいだけど、技術的な正確さにはこだわる派だよ。</p>
       <h2>記事の読み方</h2>
@@ -696,7 +696,7 @@ export function renderAboutPage(sources: SourceCount[]): string {
       ${sourceList(sources)}
       <h2>もっと便利に読むには</h2>
       <p>更新は RSS(<a href="/feed.xml">/feed.xml</a>)で受け取れるよ。それから、記事 URL の末尾に <code>.md</code> を付けると Markdown 版でも読めるの。ちょっとした裏ワザだね。</p>
-      <p>それじゃあ、また記事で会おうね!</p>
+      <p>それじゃあ、また記事で会おうね！</p>
     </div>
   </article>
 </div>`
