@@ -2,6 +2,30 @@ import { marked } from 'marked'
 import type { ArticleListRow, ArticleRow, MonthCount, SearchHit, SourceCount, TagCount } from './db'
 import { SNIP_CLOSE, SNIP_OPEN } from './db'
 
+// Render-side XSS guard: marked does not sanitize URL schemes, so neutralize
+// any link/image target that is not http(s), mailto, a fragment, or a relative
+// path. Defense in depth — schema.ts already rejects these at ingest.
+const SAFE_URL = /^(?:https?:|mailto:|#|\/|\.{0,2}\/)/i
+const attr = (s: string) => s.replace(/"/g, '&quot;')
+// Browsers ignore whitespace/control chars inside a scheme, so strip them
+// before matching; return the original href only if it passes.
+const STRIP_CTRL = new RegExp('[\\u0000-\\u0020]+', 'g')
+function safeUrl(href: string): string {
+  return SAFE_URL.test(href.replace(STRIP_CTRL, '')) ? href : '#'
+}
+
+marked.use({
+  renderer: {
+    link({ href, title, tokens }) {
+      const text = this.parser.parseInline(tokens)
+      return `<a href="${attr(safeUrl(href))}"${title ? ` title="${attr(title)}"` : ''}>${text}</a>`
+    },
+    image({ href, title, text }) {
+      return `<img src="${attr(safeUrl(href))}" alt="${attr(text)}"${title ? ` title="${attr(title)}"` : ''}>`
+    },
+  },
+})
+
 const SITE_TITLE = 'shiichan blog'
 const SITE_ORIGIN = 'https://blog.shiichan.etak64n.dev'
 const SITE_DESCRIPTION =
@@ -551,6 +575,41 @@ const THEME_TOGGLE_SCRIPT = `
   });
 })();
 `
+
+// Strict CSP owned by the Worker (version-controlled, portable, and — unlike a
+// zone-level policy with 'unsafe-inline' — an actual XSS backstop). The two
+// inline scripts are allowed by their SHA-256 hashes, computed from the script
+// constants at runtime so they can never drift. Inline styles keep
+// 'unsafe-inline' (hashing style attributes is impractical and CSS can't
+// execute JS). Memoized after first computation.
+async function sha256Base64(s: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+  let bin = ''
+  for (const b of new Uint8Array(digest)) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+
+let cspCache: string | undefined
+export async function contentSecurityPolicy(): Promise<string> {
+  if (cspCache) return cspCache
+  const hashes = await Promise.all(
+    [THEME_INIT_SCRIPT, THEME_TOGGLE_SCRIPT].map(async (s) => `'sha256-${await sha256Base64(s)}'`),
+  )
+  cspCache = [
+    "default-src 'self'",
+    `script-src 'self' ${hashes.join(' ')}`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    'font-src https://fonts.gstatic.com',
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    'upgrade-insecure-requests',
+  ].join('; ')
+  return cspCache
+}
 
 type NavKey = 'posts' | 'tags' | 'about'
 

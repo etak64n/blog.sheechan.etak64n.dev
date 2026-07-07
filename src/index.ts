@@ -13,6 +13,7 @@ import {
   upsertArticle,
 } from './db'
 import {
+  contentSecurityPolicy,
   renderAboutPage,
   renderArchiveIndexPage,
   renderArchiveMonthPage,
@@ -34,6 +35,17 @@ const CANONICAL_HOST = 'blog.shiichan.etak64n.dev'
 const LEGACY_HOSTS = new Set(['blog.sheechan.etak64n.dev'])
 
 const app = new Hono<{ Bindings: Env }>()
+
+// Worker-owned security headers on every response (defense in depth; does not
+// depend on zone configuration)
+app.use('*', async (c, next) => {
+  await next()
+  const h = c.res.headers
+  h.set('content-security-policy', await contentSecurityPolicy())
+  h.set('x-content-type-options', 'nosniff')
+  h.set('x-frame-options', 'DENY')
+  h.set('referrer-policy', 'strict-origin-when-cross-origin')
+})
 
 app.use('*', async (c, next) => {
   const url = new URL(c.req.url)
