@@ -36,6 +36,7 @@ const SITE_TITLE = 'shiichan blog'
 const SITE_ORIGIN = 'https://blog.shiichan.etak64n.dev'
 const GITHUB_BLOG = 'https://github.com/etak64n/blog.shiichan.etak64n.dev'
 const GITHUB_REPORTER = 'https://github.com/etak64n/shiichan-reporter'
+const GITHUB_CREATOR = 'https://github.com/etak64n'
 const SITE_DESCRIPTION =
   'AWS・Cloudflare・OpenAI・Anthropic の最新テックニュースを、しぃちゃんが毎日わかりやすくお届けするブログ'
 
@@ -251,10 +252,43 @@ const ICONS: Record<string, string> = {
   moon: '<path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   menu: '<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>',
   x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  wave: '<path d="M2 11c1.8-3 4.2-3 6 0s4.2 3 6 0 4.2-3 6 0"/><path d="M2 16c1.8-3 4.2-3 6 0s4.2 3 6 0 4.2-3 6 0" opacity="0.5"/>',
 }
 
 function icon(name: keyof typeof ICONS): string {
   return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`
+}
+
+// Vendor an article's source maps to for the hero illustration (public/heroes)
+function sourceVendor(name: string): 'aws' | 'cloudflare' | 'openai' | 'anthropic' | null {
+  const n = name.toLowerCase()
+  if (n.includes('aws') || n.includes('amazon')) return 'aws'
+  if (n.includes('cloudflare')) return 'cloudflare'
+  if (n.includes('openai')) return 'openai'
+  if (n.includes('anthropic') || n.includes('claude')) return 'anthropic'
+  return null
+}
+
+// Emotions available per vendor
+const ALL_EMOTIONS = ['happy', 'confused', 'thinking', 'smug', 'energetic'] as const
+const HERO_EMOTIONS: Record<string, readonly string[]> = {
+  aws: ALL_EMOTIONS,
+  cloudflare: ALL_EMOTIONS,
+  anthropic: ALL_EMOTIONS,
+  openai: ALL_EMOTIONS,
+}
+
+// Neutral placeholder for articles whose source has no character art
+const HERO_PLACEHOLDER = '/heroes/placeholder.svg'
+
+// Pick a hero illustration for an article from its source + emotion, falling
+// back to "happy" (and to the neutral placeholder for sources we have no art for)
+function heroImage(source: string, emotion: string | null): string {
+  const vendor = sourceVendor(source)
+  if (!vendor) return HERO_PLACEHOLDER
+  const avail = HERO_EMOTIONS[vendor]
+  const emo = emotion && avail.includes(emotion) ? emotion : 'happy'
+  return `/heroes/${vendor}-${emo}.webp`
 }
 
 const FAVICON =
@@ -349,13 +383,13 @@ body {
 ::selection { background: var(--sel); }
 a { color: var(--primary); -webkit-tap-highlight-color: transparent; }
 button { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
-.wrap { max-width: 1140px; margin: 0 auto; padding: 0 20px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 0; }
+.wrap { width: 100%; max-width: 1140px; margin: 0 auto; padding: 0 20px; min-width: 0; }
 .icon { width: 15px; height: 15px; flex: none; }
 .skip { position: absolute; left: -9999px; font-family: var(--mono); font-size: .8rem; font-weight: 600; }
 .skip:focus {
   left: 12px; top: 12px; position: fixed; z-index: 100;
-  background: var(--primary); color: var(--on-primary); padding: .6em 1.2em; border-radius: 8px;
+  background: var(--primary); color: var(--on-primary); padding: .6em 1.2em; border-radius: 0;
 }
 
 /* ---- header ---- */
@@ -377,13 +411,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .nav-controls { display: flex; align-items: center; gap: .1em; }
 .lang-switch {
   display: inline-flex; align-items: center; margin-right: .3em;
-  border: 1.5px solid var(--line-strong); border-radius: 999px;
+  border: 1.5px solid var(--line-strong); border-radius: 0;
   background: var(--surface-2); padding: 2px;
   font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .02em;
 }
 .lang-switch a {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 26px; padding: .3em .55em; border-radius: 999px;
+  min-width: 26px; padding: .3em .55em; border-radius: 0;
   color: var(--muted); text-decoration: none;
   transition: color .15s ease, background .15s ease;
 }
@@ -391,7 +425,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .lang-switch a.on { color: var(--on-primary); background: var(--primary); box-shadow: var(--shadow-soft); }
 .site-nav { display: flex; align-items: center; gap: .3em; font-family: var(--sans); font-size: .9rem; }
 .site-nav a { color: var(--muted); text-decoration: none; font-weight: 500; }
-.site-nav a.textlink { padding: .6em .7em; border-radius: 8px; transition: color .15s ease, background .15s ease; }
+.site-nav a.textlink { padding: .6em .7em; border-radius: 0; transition: color .15s ease, background .15s ease; }
 .site-nav a.textlink:hover { color: var(--primary); background: var(--tag-bg); }
 .site-nav a.active { color: var(--primary); }
 .menu-only { display: none; }
@@ -402,7 +436,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .menu-toggle[aria-expanded='true'] .i-close { display: inline-flex; }
 .nav-icon {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; border-radius: 10px; flex: none;
+  width: 38px; height: 38px; border-radius: 0; flex: none;
   color: var(--muted); background: none; border: none; cursor: pointer;
   transition: color .15s ease, background .15s ease;
 }
@@ -422,7 +456,7 @@ button { -webkit-tap-highlight-color: transparent; }
 /* header search */
 .header-search {
   display: flex; align-items: center; gap: .55em;
-  border: 1.5px solid var(--line-strong); border-radius: 999px;
+  border: 1.5px solid var(--line-strong); border-radius: 0;
   background: var(--surface); padding: 0 .9em; height: 38px; width: 220px; margin-right: .3em;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
@@ -436,7 +470,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .hs-input::placeholder { color: var(--muted); }
 .hs-kbd {
   font-family: var(--mono); font-size: .66rem; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 5px; padding: .1em .45em; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 0; padding: .1em .45em; background: var(--surface-2);
 }
 .nav-search { display: none; }
 
@@ -463,17 +497,17 @@ button { -webkit-tap-highlight-color: transparent; }
 .hero-cats { margin-bottom: 8px; }
 .hero-tags { padding-bottom: 8px; }
 .hero-cats::-webkit-scrollbar, .hero-tags::-webkit-scrollbar { height: 6px; }
-.hero-cats::-webkit-scrollbar-thumb, .hero-tags::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+.hero-cats::-webkit-scrollbar-thumb, .hero-tags::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 0; }
 .hero-cats::-webkit-scrollbar-track, .hero-tags::-webkit-scrollbar-track { background: transparent; }
 .hero-tags .tag { flex: none; }
 .cat {
   flex: none; display: inline-flex; align-items: center; gap: .5em;
   font-family: var(--mono); font-size: .74rem; font-weight: 600; white-space: nowrap;
   color: var(--text); text-decoration: none;
-  border: 1px solid var(--line-strong); border-radius: 999px; padding: .3em .9em;
+  border: 1px solid var(--line-strong); border-radius: 0; padding: .3em .9em;
   background: var(--surface); transition: border-color .15s ease, color .15s ease;
 }
-.cat i { width: 8px; height: 8px; border-radius: 999px; flex: none; background: var(--src-color, var(--accent)); }
+.cat i { width: 8px; height: 8px; border-radius: 0; flex: none; background: var(--src-color, var(--accent)); }
 .cat:hover { border-color: var(--accent); color: var(--primary); }
 .cat .n { color: var(--muted); }
 
@@ -497,34 +531,106 @@ button { -webkit-tap-highlight-color: transparent; }
 .day-link { color: inherit; text-decoration: none; transition: color .15s ease; }
 .day-link:hover { color: var(--primary); }
 
+/* ---- home: day rows (main) + Hot Topics rail ---- */
+.home-cols {
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 34px;
+  padding: 6px 0 60px; align-items: start;
+}
+.home-main-col { min-width: 0; }
+.day-block + .day-block { margin-top: 22px; }
+/* the day heading drives its own top space; keep it tight on the home rows */
+.day-block .section-title { margin: 1.1em 0 .8em; }
+.day-block:first-child .section-title { margin-top: .2em; }
+.day-row {
+  display: flex; gap: 18px; overflow-x: auto; padding: 4px 2px 12px;
+  scroll-snap-type: x proximity; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+}
+.day-row::-webkit-scrollbar { height: 8px; }
+.day-row::-webkit-scrollbar-thumb { background: var(--line-strong); }
+.day-row::-webkit-scrollbar-track { background: transparent; }
+/* 3 cards across the main column; scroll horizontally for the rest of the day */
+.day-row > .card { flex: 0 0 calc((100% - 2 * 18px) / 3); min-width: 232px; scroll-snap-align: start; }
+.day-more { display: none; }
+/* Hot Topics rail */
+.home-rail { min-width: 0; }
+.hot-topics { position: sticky; top: 76px; }
+.hot-head::before { display: none; }
+.hot-head .icon { width: 20px; height: 20px; color: var(--accent); }
+.hot-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hot-item { border-top: 1px solid var(--line); }
+.hot-item:first-child { border-top: none; }
+.hot-item a {
+  display: flex; flex-direction: column; gap: 7px; align-items: flex-start;
+  padding: 13px 0; text-decoration: none; color: var(--heading);
+}
+.hot-cat {
+  display: inline-flex; align-items: center; gap: .45em;
+  font-family: var(--mono); font-size: .68rem; font-weight: 700; white-space: nowrap;
+  color: var(--text); border: 1px solid var(--line-strong); padding: .22em .7em; background: var(--surface);
+}
+.hot-cat i { width: 7px; height: 7px; flex: none; background: var(--src-color, var(--accent)); }
+.hot-title {
+  font-family: var(--display); font-weight: 700; font-size: .92rem; line-height: 1.4;
+  word-break: auto-phrase; transition: color .15s ease;
+}
+.hot-item a:hover .hot-title { color: var(--primary); }
+.hot-meta {
+  display: flex; align-items: center; justify-content: space-between; gap: .5em; width: 100%;
+  font-family: var(--mono); font-size: .72rem; color: var(--muted);
+}
+.hot-meta .stars { font-size: 1rem; }
+.hot-date { color: var(--muted); }
+@media (max-width: 900px) {
+  .home-cols { grid-template-columns: 1fr; gap: 40px; }
+  .hot-topics { position: static; }
+}
+/* Small screens: stop the horizontal scroll — show the first few and a "more" link */
+@media (max-width: 640px) {
+  .day-row { flex-direction: column; overflow: visible; gap: 14px; padding: 4px 0 0; }
+  .day-row > .card { flex: none; min-width: 0; width: 100%; }
+  .day-row > .card:nth-child(n + 4) { display: none; }
+  .day-more { display: block; }
+}
+
 /* ---- cards (thumbnail + genre tag + title + meta, per design-system) ---- */
-.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 18px; }
+.card-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 1000px) { .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .card-grid { grid-template-columns: 1fr; } }
 .card {
   position: relative; display: flex; flex-direction: column;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 0;
   overflow: hidden; cursor: pointer; box-shadow: var(--shadow-soft);
   transition: transform .15s ease, box-shadow .15s ease;
   animation: rise .5s ease backwards;
 }
 .card:hover, .card:focus-within { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
 .thumb {
-  position: relative; aspect-ratio: 16 / 9; display: flex; align-items: flex-end;
+  position: relative; aspect-ratio: 16 / 9; overflow: hidden;
   background: linear-gradient(140deg, var(--thumb-a, var(--sky)), var(--thumb-b, var(--aqua)));
 }
-.thumb .wave { width: 100%; height: 26px; display: block; color: rgba(255, 255, 255, .9); }
+.thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .thumb .latest-label {
   position: absolute; top: 12px; left: 12px;
   font-family: var(--mono); font-size: .64rem; font-weight: 700; letter-spacing: .14em;
-  color: var(--on-primary); background: var(--primary); border-radius: 999px; padding: .25em 1em;
+  color: var(--on-primary); background: var(--primary); border-radius: 0; padding: .25em 1em;
 }
-.card-body { display: flex; flex-direction: column; gap: .5em; padding: 14px 18px 18px; }
+.card-body { display: flex; flex-direction: column; gap: .5em; padding: 14px 18px 18px; flex: 1; }
 .card-body h2, .card-body h3 {
   margin: 0; font-family: var(--display); font-size: 1.05rem; line-height: 1.5; font-weight: 700;
 }
 .card-body h2 a, .card-body h3 a { color: var(--heading); text-decoration: none; transition: color .15s ease; }
 .card:hover .card-body h2 a, .card:hover .card-body h3 a { color: var(--primary); }
 .card-body h2 a::after, .card-body h3 a::after { content: ''; position: absolute; inset: 0; }
-.card-meta { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.card-meta {
+  display: flex; align-items: center; justify-content: space-between; gap: .5em;
+  margin-top: auto; padding-top: .5em;
+  font-family: var(--mono); font-size: .72rem; color: var(--muted);
+}
+.card-date { color: var(--muted); }
+.stars { color: #F5A623; letter-spacing: 1.5px; font-size: .9rem; line-height: 1; white-space: nowrap; }
+.card .stars { font-size: 1.15rem; }
 .card .summary {
   margin: 0; font-size: .86rem; color: var(--muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -534,7 +640,7 @@ button { -webkit-tap-highlight-color: transparent; }
   color: var(--brand, var(--primary));
   background: color-mix(in srgb, var(--brand, var(--accent)) 13%, transparent);
   border: 1px solid color-mix(in srgb, var(--brand, var(--accent)) 38%, transparent);
-  border-radius: 6px; padding: .18em .7em;
+  border-radius: 0; padding: .18em .7em;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) .genre-tag { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
@@ -546,7 +652,7 @@ button { -webkit-tap-highlight-color: transparent; }
   position: relative; z-index: 2;
   font-family: var(--mono); font-size: .72rem; font-weight: 600;
   color: var(--primary); text-decoration: none;
-  border: 1px solid var(--line-strong); border-radius: 8px; padding: .22em .8em;
+  border: 1px solid var(--line-strong); border-radius: 0; padding: .22em .8em;
   background: var(--tag-bg); transition: border-color .15s ease, background .15s ease;
 }
 .tag:hover { border-color: var(--accent); background: var(--tag-bg-hover); }
@@ -558,12 +664,12 @@ button { -webkit-tap-highlight-color: transparent; }
   font-family: var(--mono); font-size: .72rem; color: var(--muted);
 }
 .src { display: inline-flex; align-items: center; gap: .5em; }
-.src i { width: 8px; height: 8px; border-radius: 999px; flex: none; background: var(--src-color, var(--accent)); }
-.card mark { background: var(--sel); color: inherit; border-radius: 3px; padding: 0 .12em; }
+.src i { width: 8px; height: 8px; border-radius: 0; flex: none; background: var(--src-color, var(--accent)); }
+.card mark { background: var(--sel); color: inherit; border-radius: 0; padding: 0 .12em; }
 
 /* ---- sidebar ---- */
 .panel {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 0;
   padding: 22px 24px; margin-bottom: 18px; box-shadow: var(--shadow-soft);
   animation: rise .5s ease backwards;
 }
@@ -606,7 +712,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .pg-btn {
   display: inline-flex; align-items: center; gap: .4em;
   color: var(--primary); text-decoration: none; font-weight: 600;
-  border: 1.5px solid var(--line-strong); border-radius: 999px; padding: .5em 1.2em;
+  border: 1.5px solid var(--line-strong); border-radius: 0; padding: .5em 1.2em;
   background: var(--surface); transition: background .15s ease, border-color .15s ease;
 }
 .pg-btn:hover { background: var(--tag-bg); border-color: var(--accent); }
@@ -616,7 +722,7 @@ button { -webkit-tap-highlight-color: transparent; }
 /* ---- about hero ---- */
 .about-hero { display: flex; align-items: center; gap: 26px; margin-bottom: 8px; }
 .about-avatar {
-  width: 150px; height: 150px; flex: none; border-radius: 999px; object-fit: cover;
+  width: 150px; height: 150px; flex: none; border-radius: 0; object-fit: cover;
   background: var(--surface); border: 3px solid var(--surface);
   box-shadow: 0 0 0 3px var(--accent), var(--shadow-lift);
 }
@@ -628,7 +734,7 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .profile {
   margin: 2em 0 0; padding: 6px 20px; border: 1px solid var(--line);
-  border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-soft);
+  border-radius: 0; background: var(--surface); box-shadow: var(--shadow-soft);
 }
 .profile > div {
   display: grid; grid-template-columns: 7.5em 1fr; gap: .5em 1em;
@@ -651,42 +757,84 @@ button { -webkit-tap-highlight-color: transparent; }
 .backlink:hover { color: var(--primary); }
 .article-title {
   font-family: var(--display); font-weight: 700; color: var(--heading);
-  font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.4; margin: .6em 0 .7em; text-wrap: balance;
+  font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.4; margin: .6em 0 .7em;
+  /* break at natural Japanese phrase boundaries instead of mid-word */
+  word-break: auto-phrase; line-break: strict;
 }
 .article-meta {
-  display: flex; flex-wrap: wrap; align-items: center; gap: .6em 1.2em;
-  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
-  padding: .8em 1.3em; margin-bottom: 1.1em; box-shadow: var(--shadow-soft);
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6em 1em; margin: 0 0 1.4em;
 }
 .article-meta .spacer { flex: 1; }
-.mdlink {
-  display: inline-flex; align-items: center; gap: .5em;
+.meta-date { font-family: var(--mono); font-size: .74rem; color: var(--muted); }
+.metabtn {
+  display: inline-flex; align-items: center; gap: .45em;
   font-family: var(--mono); font-size: .72rem; font-weight: 700; color: var(--primary); text-decoration: none;
-  border: 1.5px solid var(--line-strong); border-radius: 999px; padding: .4em 1em; transition: background .15s ease, border-color .15s ease;
+  border: 1.5px solid var(--line-strong); padding: .4em 1em;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
-.mdlink:hover { background: var(--tag-bg); border-color: var(--accent); }
-.srclink {
-  display: inline-flex; align-items: center; gap: .4em;
-  font-family: var(--mono); font-size: .72rem; color: var(--muted); text-decoration: none; padding: .4em 0; transition: color .15s ease;
+.metabtn:hover { background: var(--tag-bg); border-color: var(--accent); }
+/* External-link "blog card" pointing to the original announcement (after the greeting) */
+.linkcard {
+  display: flex; align-items: stretch; gap: 16px; margin: 10px 0 26px;
+  border: 1px solid var(--line); background: var(--surface); overflow: hidden;
+  text-decoration: none; color: var(--text);
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-.srclink:hover { color: var(--primary); }
+.linkcard:hover { border-color: var(--accent); box-shadow: var(--shadow-soft); }
+.linkcard-body {
+  display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1;
+  padding: 16px 4px 16px 18px; justify-content: center;
+}
+.linkcard-title {
+  display: flex; align-items: center; gap: .4em;
+  font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--heading);
+}
+.linkcard-title svg { width: 14px; height: 14px; flex: none; color: var(--muted); }
+.linkcard:hover .linkcard-title svg { color: var(--primary); }
+.linkcard-host {
+  display: flex; align-items: center; gap: .45em;
+  font-family: var(--mono); font-size: .74rem; color: var(--muted);
+  overflow: hidden; white-space: nowrap;
+}
+.linkcard-host > span { overflow: hidden; text-overflow: ellipsis; }
+.linkcard-favicon { width: 16px; height: 16px; flex: none; border-radius: 3px; }
+/* Open Graph preview image (the link-embed thumbnail) */
+.linkcard-thumb { flex: none; width: 190px; align-self: stretch; overflow: hidden; background: var(--surface-2); }
+.linkcard-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Vendor-logo fallback when no OG image is cached */
+.linkcard-logo {
+  flex: none; width: 132px; align-self: stretch; display: flex; align-items: center; justify-content: center;
+  padding: 14px; background: var(--surface-2); border-left: 1px solid var(--line);
+}
+.linkcard-logo img { display: block; width: 48px; height: 48px; object-fit: contain; }
+@media (max-width: 480px) {
+  .linkcard-thumb { width: 118px; }
+  .linkcard-logo { width: 92px; padding: 10px; }
+  .linkcard-logo img { width: 40px; height: 40px; }
+}
 
 /* ---- article: ToC sidebar + hero + tags ---- */
-.article-layout { max-width: 1140px; margin: 0 auto; padding: 40px 20px 80px; }
+.article-layout { max-width: 1140px; margin: 0 auto; padding: 18px 20px 80px; }
 .article-layout.has-toc {
-  display: grid; grid-template-columns: 210px minmax(0, 760px);
-  gap: 44px; justify-content: center; align-items: start;
+  display: grid; grid-template-columns: 200px minmax(0, 760px);
+  gap: 40px; justify-content: center; align-items: start;
 }
 .article-col { min-width: 0; }
 .article-layout:not(.has-toc) .article-col { max-width: 760px; margin: 0 auto; }
 .article-card {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 0;
   padding: 28px 32px 44px; box-shadow: var(--shadow-soft); margin-top: .4em;
 }
+/* Related posts sit below everything, spanning the full width under the ToC */
 .related { margin-top: 44px; }
 .related .section-title { margin-top: 0; }
+.article-layout.has-toc > .related { grid-column: 1 / -1; }
+.article-layout:not(.has-toc) > .related { max-width: 760px; margin-left: auto; margin-right: auto; }
+@media (max-width: 1080px) {
+  .article-layout > .related { max-width: 760px; margin-left: auto; margin-right: auto; }
+}
 @media (max-width: 560px) {
-  .article-card { padding: 20px 20px 32px; border-radius: 14px; }
+  .article-card { padding: 20px 20px 32px; border-radius: 0; }
 }
 .toc { position: sticky; top: 76px; align-self: start; }
 .toc-title {
@@ -703,18 +851,18 @@ button { -webkit-tap-highlight-color: transparent; }
 .toc a.active { color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
 .toc-h3 a { padding-left: 1.7em; font-size: .8rem; }
 .article-hero {
-  position: relative; aspect-ratio: 1200 / 420; display: flex; align-items: flex-end;
-  border-radius: 16px; overflow: hidden; margin-bottom: 22px; box-shadow: var(--shadow-soft);
-  background: linear-gradient(140deg, var(--thumb-a, var(--sky)), var(--thumb-b, var(--aqua)));
+  position: relative; border-radius: 0; overflow: hidden;
+  margin-bottom: 22px; box-shadow: var(--shadow-soft); border: 1px solid var(--line);
 }
-.article-hero .wave { width: 100%; height: 30px; display: block; color: rgba(255, 255, 255, .9); }
+.article-hero img { display: block; width: 100%; height: auto; }
 .article-hero-src {
   position: absolute; top: 14px; left: 16px;
   font-family: var(--mono); font-size: .72rem; font-weight: 700; color: var(--brand, var(--primary));
-  background: rgba(255, 255, 255, .88); border-radius: 999px; padding: .25em .9em;
+  background: rgba(255, 255, 255, .9); border-radius: 0; padding: .25em .9em;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
 }
 .article-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 2.4em; }
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
   .article-layout.has-toc { display: block; }
   .toc { display: none; }
   .article-col { max-width: 760px; margin: 0 auto; }
@@ -734,16 +882,16 @@ button { -webkit-tap-highlight-color: transparent; }
 .prose code {
   font-family: var(--mono); font-size: .86em; color: var(--primary);
   background: color-mix(in srgb, var(--sky) 22%, transparent);
-  border-radius: 5px; padding: .08em .45em;
+  border-radius: 0; padding: .08em .45em;
 }
 .prose pre {
-  background: var(--code-bg); border-radius: 10px; padding: 1em 1.3em; overflow-x: auto;
+  background: var(--code-bg); border-radius: 0; padding: 1em 1.3em; overflow-x: auto;
   line-height: 1.7; box-shadow: var(--shadow-soft);
 }
 .prose pre code { background: none; padding: 0; color: var(--code-text); font-size: .86rem; }
 .prose blockquote {
   margin: 1.4em 0; padding: .6em 1.1em; border-left: 3px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--muted); border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--muted); border-radius: 0;
 }
 .prose ul, .prose ol { padding-left: 1.6em; }
 .prose li { margin: .4em 0; }
@@ -752,12 +900,12 @@ button { -webkit-tap-highlight-color: transparent; }
 .prose table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; font-size: .88rem; }
 .prose th, .prose td { border: 1px solid var(--line); padding: .5em .9em; text-align: left; }
 .prose th { background: var(--surface-2); font-family: var(--mono); font-size: .78rem; color: var(--heading); }
-.prose img { max-width: 100%; border-radius: 12px; }
+.prose img { max-width: 100%; border-radius: 0; }
 
 /* ---- search page ---- */
 .search-form {
   display: flex; align-items: center; gap: .7em; max-width: 640px;
-  border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--surface);
+  border: 1.5px solid var(--line-strong); border-radius: 0; background: var(--surface);
   padding: 0 1.1em; height: 54px; margin-bottom: 34px; box-shadow: var(--shadow-soft);
   transition: border-color .15s ease;
 }
@@ -766,7 +914,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .search-form .hs-input { font-size: 1rem; height: 100%; }
 .search-btn {
   font-family: var(--sans); font-size: .82rem; font-weight: 700; color: var(--on-primary);
-  background: var(--primary); border: none; border-radius: 999px; padding: .55em 1.4em; cursor: pointer;
+  background: var(--primary); border: none; border-radius: 0; padding: .55em 1.4em; cursor: pointer;
   transition: background .15s ease, transform .15s ease;
 }
 .search-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
@@ -776,7 +924,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .month-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
 .month-list a {
   display: flex; align-items: baseline; gap: .8em; background: var(--surface);
-  border: 1px solid var(--line); border-radius: 14px; padding: 1em 1.3em; text-decoration: none;
+  border: 1px solid var(--line); border-radius: 0; padding: 1em 1.3em; text-decoration: none;
   color: var(--text); box-shadow: var(--shadow-soft); transition: transform .15s ease, box-shadow .15s ease;
 }
 .month-list a:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
@@ -799,16 +947,33 @@ button { -webkit-tap-highlight-color: transparent; }
 /* ---- footer ---- */
 .site-footer { margin-top: auto; }
 .footer-wave { display: block; width: 100%; height: 16px; color: var(--navy); }
-.footer-inner { background: var(--navy); color: #EAF3FE; padding: 26px 0 38px; }
-.footer-inner .wrap {
-  display: flex; flex-wrap: wrap; gap: .8em 2em; justify-content: space-between; align-items: center;
-  font-family: var(--mono); font-size: .74rem; color: #A9C4EE;
+.footer-inner { background: var(--navy); color: #EAF3FE; padding: 26px 0 14px; }
+.footer-grid {
+  display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 18px 28px; align-items: start;
 }
-.footer-inner .fbrand { display: inline-flex; align-items: center; gap: .55em; color: #EAF3FE; font-family: var(--display); font-weight: 700; }
+.fcol-brand { max-width: 340px; }
+.footer-inner .fbrand {
+  display: inline-flex; align-items: center; gap: .5em; color: #FFFFFF;
+  font-family: var(--display); font-weight: 700; font-size: 1.1rem; text-decoration: none;
+}
 .footer-inner .fbrand .wave-mark { width: 26px; height: 16px; color: #EAF3FE; }
-.footer-inner a { color: #EAF3FE; }
-.jelly { display: inline-block; animation: bob 3.5s ease-in-out infinite; }
-@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.footer-inner .ftag { margin: 8px 0 0; color: #A9C4EE; font-size: .8rem; line-height: 1.5; }
+.fhead {
+  margin: 0 0 9px; font-family: var(--mono); font-size: .72rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: #7FA9E6;
+}
+.fcol ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; line-height: 1.3; }
+.footer-inner a { color: #D6E6FB; text-decoration: none; font-size: .86rem; line-height: 1.3; transition: color .15s ease; }
+.footer-inner a:hover { color: #FFFFFF; text-decoration: underline; text-underline-offset: 3px; }
+.fbar {
+  display: flex; flex-wrap: wrap; gap: .5em 1.6em; justify-content: space-between; align-items: center;
+  margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .14);
+  font-family: var(--mono); font-size: .72rem; color: #7FA9E6;
+}
+@media (max-width: 640px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .fcol-brand { grid-column: 1 / -1; max-width: none; }
+}
 
 /* ---- mobile: collapse nav into a hamburger dropdown ---- */
 @media (max-width: 760px) {
@@ -956,7 +1121,7 @@ export async function contentSecurityPolicy(): Promise<string> {
   return cspCache
 }
 
-type NavKey = 'posts' | 'tags' | 'about'
+type NavKey = 'posts' | 'popular' | 'tags' | 'archive' | 'about'
 
 type LayoutOpts = {
   title: string
@@ -1019,7 +1184,9 @@ ${opts.head ?? ''}
     <div class="nav-right">
       <nav class="site-nav" id="site-nav" aria-label="Site navigation">
         ${navLink(base, '/posts', 'Posts', 'posts', opts.nav)}
+        ${navLink(base, '/popular', 'Popular', 'popular', opts.nav)}
         ${navLink(base, '/tags', 'Tags', 'tags', opts.nav)}
+        ${navLink(base, '/archive', 'Archive', 'archive', opts.nav)}
         ${navLink(base, '/about', 'About', 'about', opts.nav)}
         <a class="textlink menu-only" href="${base}/search">Search</a>
         <a class="textlink menu-only" href="${base}/feed.xml">RSS</a>
@@ -1046,9 +1213,39 @@ ${main}
 <footer class="site-footer">
   <svg class="footer-wave" viewBox="0 0 480 16" preserveAspectRatio="none" aria-hidden="true"><path d="M0 16 L0 9 Q 20 0 40 9 T 80 9 T 120 9 T 160 9 T 200 9 T 240 9 T 280 9 T 320 9 T 360 9 T 400 9 T 440 9 T 480 9 L480 16 Z" fill="currentColor"/></svg>
   <div class="footer-inner">
-    <div class="wrap">
-      <span class="fbrand">${WAVE_MARK}shiichan blog</span>
-      <span class="flinks">${esc(t.footerRight)} / <a href="${base}/search">Search</a> / <a href="${base}/archive">Archive</a> / <a href="${base}/feed.xml">RSS</a> / GitHub <a href="${GITHUB_BLOG}" rel="noopener">blog</a> · <a href="${GITHUB_REPORTER}" rel="noopener">reporter</a> <span class="jelly" aria-hidden="true">🪼</span></span>
+    <div class="wrap footer-grid">
+      <div class="fcol fcol-brand">
+        <a class="fbrand" href="${base}/">${WAVE_MARK}shiichan blog</a>
+        <p class="ftag">${esc(t.footerTag)}</p>
+      </div>
+      <nav class="fcol" aria-label="Explore">
+        <h2 class="fhead">Explore</h2>
+        <ul>
+          <li><a href="${base}/">Home</a></li>
+          <li><a href="${base}/posts">Posts</a></li>
+          <li><a href="${base}/tags">Tags</a></li>
+          <li><a href="${base}/archive">Archive</a></li>
+          <li><a href="${base}/search">Search</a></li>
+          <li><a href="${base}/feed.xml">RSS</a></li>
+          <li><a href="${base}/about">About</a></li>
+        </ul>
+      </nav>
+      <nav class="fcol" aria-label="GitHub">
+        <h2 class="fhead">GitHub</h2>
+        <ul>
+          <li><a href="${GITHUB_BLOG}" rel="noopener">blog</a></li>
+          <li><a href="${GITHUB_REPORTER}" rel="noopener">reporter</a></li>
+        </ul>
+      </nav>
+      <nav class="fcol" aria-label="Creator">
+        <h2 class="fhead">Creator</h2>
+        <ul>
+          <li><a href="${GITHUB_CREATOR}" rel="noopener">etak64n</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap fbar">
+      <span>© shiichan blog</span>
     </div>
   </div>
 </footer>
@@ -1066,6 +1263,44 @@ function sourceBadge(name: string): string {
   return `<span class="src" style="--src-color:${sourceColor(name)}"><i></i>${esc(name)}</span>`
 }
 
+// External-link "blog card" (classmethod-style) shown right after the greeting,
+// sending readers to the original announcement. Shows the source favicon and a
+// representative site image on the right.
+function externalLinkCard(url: string, sourceName: string, ogImage: string | null): string {
+  let host = ''
+  try {
+    host = new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    host = ''
+  }
+  const vendor = sourceVendor(sourceName)
+  const favicon = vendor
+    ? `<img class="linkcard-favicon" src="/favicons/${vendor}.png" alt="" width="16" height="16" loading="lazy" decoding="async">`
+    : ''
+  // Prefer the source's Open Graph preview image (the link-embed thumbnail);
+  // fall back to the vendor logo when we don't have one cached.
+  let media = ''
+  if (ogImage) {
+    media = `<span class="linkcard-thumb"><img src="/ogp/${esc(ogImage)}" alt="" loading="lazy" decoding="async"></span>`
+  } else if (vendor) {
+    media = `<span class="linkcard-logo"><img src="/favicons/${vendor}.png" alt="${esc(sourceName)} logo" width="64" height="64" loading="lazy" decoding="async"></span>`
+  }
+  return `
+<a class="linkcard" href="${esc(url)}" rel="noopener" target="_blank">
+  <span class="linkcard-body">
+    <span class="linkcard-title">${esc(sourceName)}${icon('arrow-up-right')}</span>
+    <span class="linkcard-host">${favicon}<span>${esc(host)}</span></span>
+  </span>
+  ${media}
+</a>`
+}
+
+// Importance rating: N gold stars (1-5, falls back to 1)
+function stars(importance: number | null): string {
+  const n = Math.max(1, Math.min(5, importance ?? 1))
+  return `<span class="stars" title="importance ${n}/5" aria-label="importance ${n} of 5">${'★'.repeat(n)}</span>`
+}
+
 // Category chip: a source (e.g. "Cloudflare Changelog") linking to its page
 function sourceCatChip(base: string, name: string, count?: number): string {
   const n = count !== undefined ? `<span class="n">${count}</span>` : ''
@@ -1077,9 +1312,6 @@ function sourceList(sources: SourceCount[]): string {
     ${sources.map((s) => `<li><span class="src" style="--src-color:${sourceColor(s.source_name)}"><i></i></span>${esc(s.source_name)}<span class="n">${s.count}</span></li>`).join('\n    ')}
   </ul>`
 }
-
-// Thumbnail wave line (echoes the aquarius motif), white over the gradient
-const THUMB_WAVE = `<svg class="wave" viewBox="0 0 480 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 Q 20 4 40 14 T 80 14 T 120 14 T 160 14 T 200 14 T 240 14 T 280 14 T 320 14 T 360 14 T 400 14 T 440 14 T 480 14" fill="none" stroke="currentColor" stroke-width="3"/></svg>`
 
 // Uniform article card: every card is the same size. `latest` only adds a
 // LATEST ribbon; `summaryHtml` (search snippets) shows a short excerpt.
@@ -1093,21 +1325,21 @@ function articleCard(
   const base = basePath(lang)
   const delay = Math.min(index * 45, 500)
   const brand = sourceBrand(r.source_name)
-  // Thumbnail wash: blue-family gradient (per design system) with only a faint
-  // brand tint so each source is subtly recognizable without going muddy
-  const thumbStyle = `--brand:${brand};--thumb-a:color-mix(in srgb, ${brand} 12%, #DCEBFA);--thumb-b:color-mix(in srgb, ${brand} 20%, var(--aqua))`
+  // Thumbnail: the emotion-matched hero illustration for this article, over a
+  // faint brand-tinted wash that shows through while the image loads
+  const thumbStyle = `--thumb-a:color-mix(in srgb, ${brand} 12%, #DCEBFA);--thumb-b:color-mix(in srgb, ${brand} 20%, var(--aqua))`
   const summary = summaryHtml !== undefined ? `<p class="summary">${summaryHtml}</p>` : ''
   return `
 <article class="card" style="animation-delay:${delay}ms">
-  <div class="thumb" style="${thumbStyle}" aria-hidden="true">
+  <div class="thumb" style="${thumbStyle}">
     ${latest ? '<span class="latest-label">LATEST</span>' : ''}
-    ${THUMB_WAVE}
+    <img src="${heroImage(r.source_name, r.emotion)}" alt="" loading="lazy" decoding="async" width="1200" height="676">
   </div>
   <div class="card-body">
     <span class="genre-tag" style="--brand:${brand}">${esc(r.source_name)}</span>
     <h3><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></h3>
-    <p class="card-meta">${esc(fmtDate(r.published_at))}</p>
     ${summary}
+    <p class="card-meta">${stars(r.importance)}<span class="card-date">${esc(fmtDate(r.published_at))}</span></p>
   </div>
 </article>`
 }
@@ -1143,15 +1375,43 @@ type DayGroup = { date: string; articles: ArticleListRow[]; hasMore: boolean }
 
 type IndexData = {
   days: DayGroup[]
-  popular: ArticleListRow[]
   tags: TagCount[]
   sources: SourceCount[]
-  months: MonthCount[]
-  total: number
+  hotTopics: ArticleListRow[]
+}
+
+// How many cards stay visible per day on small screens before collapsing to
+// a "more" link (wide screens show the full row and scroll horizontally)
+const DAY_MOBILE_SHOWN = 3
+
+// "Hot Topics" rail: this week's highest-importance posts, ranked by their stars
+function hotTopicsPanel(items: ArticleListRow[], lang: Lang): string {
+  if (!items.length) return ''
+  const base = basePath(lang)
+  const sub = lang === 'en' ? 'this week' : '今週の注目'
+  const li = items
+    .map(
+      (r) => `
+    <li class="hot-item">
+      <a href="${base}/posts/${esc(r.slug)}">
+        <span class="hot-cat" style="--src-color:${sourceColor(r.source_name)}"><i></i>${esc(r.source_name)}</span>
+        <span class="hot-title">${esc(artTitle(r, lang))}</span>
+        <span class="hot-meta">${stars(r.importance)}<span class="hot-date">${esc(fmtDate(r.published_at))}</span></span>
+      </a>
+    </li>`,
+    )
+    .join('')
+  return `
+<aside class="home-rail">
+  <div class="panel hot-topics">
+    <h2 class="section-title hot-head">${icon('wave')}Hot Topics <span class="pop-week">${sub}</span></h2>
+    <ul class="hot-list">${li}</ul>
+  </div>
+</aside>`
 }
 
 export function renderIndexPage(data: IndexData, lang: Lang): string {
-  const { days, popular, tags, sources, months, total } = data
+  const { days, tags, sources, hotTopics } = data
   const t = T[lang]
   const base = basePath(lang)
 
@@ -1168,53 +1428,32 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
   </div>
 </section>`
 
-  // Recent days, each showing up to 4 posts with a "more" link to that day's
-  // page; the newest post overall carries a LATEST ribbon
+  // Each recent day is a horizontal, scrollable row of cards (3 across); on
+  // small screens the row collapses to the first few cards plus a "more" link
+  // to that day's page. The newest post overall carries a LATEST ribbon.
   const mainCol = days.length
     ? `${days
-        .map(
-          (g, gi) => `
-<h2 class="section-title"><a class="day-link" href="${base}/day/${g.date}">${fmtFullDate(g.date, lang)}</a></h2>
-<div class="card-grid">${g.articles.map((r, i) => articleCard(r, i, lang, { latest: gi === 0 && i === 0 })).join('\n')}</div>
-${g.hasMore ? `<p class="more-row"><a class="panel-more" href="${base}/day/${g.date}">${t.more} ${icon('arrow-up-right')}</a></p>` : ''}`,
-        )
+        .map((g, gi) => {
+          const collapses = g.articles.length > DAY_MOBILE_SHOWN
+          return `
+<section class="day-block">
+  <h2 class="section-title"><a class="day-link" href="${base}/day/${g.date}">${fmtFullDate(g.date, lang)}</a></h2>
+  <div class="day-row">${g.articles.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+  ${collapses ? `<p class="more-row day-more"><a class="panel-more" href="${base}/day/${g.date}">${t.more} ${icon('arrow-up-right')}</a></p>` : ''}
+</section>`
+        })
         .join('\n')}
 <p class="more-row"><a class="panel-more" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
     : '<p>No articles yet.</p>'
 
-  const sideCol = `
-${popularPanel(popular, lang)}
-<div class="panel" id="tags" style="animation-delay:120ms">
-  <h2 class="section-title">${esc(t.tags)}</h2>
-  <p class="tag-row">${tags.map((tg) => tagChip(base, tg.tag, tg.count)).join('')}</p>
-  <a class="panel-more" href="${base}/tags">${t.allTags} ${icon('arrow-up-right')}</a>
-</div>
-<div class="panel" style="animation-delay:200ms">
-  <h2 class="section-title">${esc(t.sources)}</h2>
-  ${sourceList(sources)}
-</div>
-<div class="panel" style="animation-delay:240ms">
-  <h2 class="section-title">${esc(t.archive)}</h2>
-  <ul class="src-list">
-    ${months
-      .slice(0, 12)
-      .map(
-        (m) =>
-          `<li><a href="${base}/archive/${esc(m.month)}">${fmtMonth(m.month, lang)}</a><span class="n">${m.count}</span></li>`,
-      )
-      .join('\n    ')}
-  </ul>
-  <a class="panel-more" href="${base}/archive">${t.allMonths} ${icon('arrow-up-right')}</a>
-</div>
-<div class="panel" style="animation-delay:280ms">
-  <h2 class="section-title">${esc(t.about)}</h2>
-  <p class="about-text">${t.aboutPanel}</p>
-  <a class="panel-more" href="${base}/about">${t.more} ${icon('arrow-up-right')}</a>
-</div>`
-
   return layout(
     { title: SITE_TITLE, canonicalPath: '/', lang },
-    `${hero}\n<div class="wrap">${WAVE_DIVIDER}</div>\n<div class="cols wrap"><main id="main">${mainCol}</main><aside>${sideCol}</aside></div>`,
+    `${hero}
+<div class="wrap">${WAVE_DIVIDER}</div>
+<div class="wrap home-cols">
+  <main id="main" class="home-main-col">${mainCol}</main>
+  ${hotTopicsPanel(hotTopics, lang)}
+</div>`,
   )
 }
 
@@ -1460,6 +1699,33 @@ export function renderDayPage(date: string, rows: ArticleListRow[], lang: Lang):
   )
 }
 
+export function renderPopularPage(rows: ArticleListRow[], lang: Lang): string {
+  const t = T[lang]
+  const title = lang === 'en' ? 'Popular' : '人気の記事'
+  const main = `
+<section class="page-head wrap">
+  <h1>${esc(title)}</h1>
+  <p class="count">${t.postsCount(rows.length)}</p>
+</section>
+<section class="list-section wrap" id="main">
+  ${
+    rows.length
+      ? `<div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>`
+      : `<p>${esc(lang === 'en' ? 'No popular posts yet.' : 'まだ人気の記事がないよ。')}</p>`
+  }
+</section>`
+  return layout(
+    {
+      title: `${title} | ${SITE_TITLE}`,
+      description: lang === 'en' ? 'Most-read posts on shiichan blog' : 'よく読まれている記事一覧',
+      canonicalPath: '/popular',
+      lang,
+      nav: 'popular',
+    },
+    main,
+  )
+}
+
 export function renderSourcePage(name: string, rows: ArticleListRow[], lang: Lang): string {
   const t = T[lang]
   const main = `
@@ -1507,8 +1773,11 @@ export async function renderArticlePage(
   }
   const bodyHtml = marked.parser(tokens)
 
-  const brand = sourceBrand(row.source_name)
-  const heroStyle = `--brand:${brand};--thumb-a:color-mix(in srgb, ${brand} 12%, #DCEBFA);--thumb-b:color-mix(in srgb, ${brand} 20%, var(--aqua))`
+  // Original-source card sits right after the greeting (the first paragraph)
+  const linkCard = externalLinkCard(row.source_url, row.source_name, row.og_image)
+  const proseHtml = bodyHtml.includes('</p>')
+    ? bodyHtml.replace('</p>', `</p>\n${linkCard}`)
+    : `${linkCard}\n${bodyHtml}`
 
   const tocAside =
     toc.length >= 2
@@ -1541,22 +1810,23 @@ export async function renderArticlePage(
   ${tocAside}
   <div class="article-col" id="main">
     <article class="article-card">
-      <div class="article-hero" style="${heroStyle}" aria-hidden="true">
-        <span class="article-hero-src" style="--brand:${brand}">${esc(row.source_name)}</span>
-        ${THUMB_WAVE}
+      <div class="article-hero">
+        <img src="${heroImage(row.source_name, row.emotion)}" width="1200" height="675"
+          alt="shiichan" fetchpriority="high" decoding="async">
       </div>
       <h1 class="article-title">${esc(title)}</h1>
       <div class="article-meta">
-        <p class="meta" style="margin:0">${sourceBadge(row.source_name)}<span>${esc(fmtDate(row.published_at))}</span></p>
+        ${sourceCatChip(base, row.source_name)}
+        <span class="meta-date">${esc(fmtDate(row.published_at))}</span>
+        ${stars(row.importance)}
         <span class="spacer"></span>
-        <a class="srclink" href="${esc(row.source_url)}" rel="noopener">${esc(t.source)}${icon('arrow-up-right')}</a>
-        <a class="mdlink" href="${esc(mdPath)}">${icon('file-code')}RAW .md</a>
+        <a class="metabtn" href="${esc(mdPath)}">${icon('file-code')}${lang === 'en' ? 'View Markdown' : 'Markdown で見る'}</a>
       </div>
       ${tags.length ? `<div class="article-tags">${tags.map((tg) => tagChip(base, tg)).join('')}</div>` : ''}
-      <div class="prose">${bodyHtml}</div>
+      <div class="prose">${proseHtml}</div>
     </article>
-    ${relatedSection}
   </div>
+  ${relatedSection}
 </div>`
   return layout(
     {

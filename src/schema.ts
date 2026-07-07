@@ -38,6 +38,17 @@ export const articleSchema = z.object({
   title_en: z.string().min(1).max(300).optional(),
   summary_en: cleanText(1000).optional(),
   body_md_en: cleanBody.optional(),
+  // Emotion for the hero illustration; the renderer falls back to "happy"
+  emotion: z.enum(['happy', 'confused', 'thinking', 'smug', 'energetic']).optional(),
+  // Importance 1-5 from an engineer's perspective (5 = genuinely interesting
+  // technical update, 1 = business/announcement). Drives the star rating.
+  importance: z.number().int().min(1).max(5).optional(),
+  // Locally-cached Open Graph image filename (served from /ogp/); optional.
+  og_image: z
+    .string()
+    .max(200)
+    .regex(/^[A-Za-z0-9._-]+$/)
+    .optional(),
   // Host allowlist is checked in the handler (list lives in wrangler.jsonc vars)
   source_url: z.url(),
   // Not an enum: sources will grow over time (watcher's sources.json is the source of truth)

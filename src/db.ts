@@ -8,6 +8,9 @@ export type ArticleRow = {
   title_en: string | null
   summary_en: string | null
   body_md_en: string | null
+  emotion: string | null
+  importance: number | null
+  og_image: string | null
   source_url: string
   source_name: string
   tags: string
@@ -24,6 +27,8 @@ export type ArticleListRow = Pick<
   | 'source_name'
   | 'tags'
   | 'published_at'
+  | 'emotion'
+  | 'importance'
 >
 
 export type TagCount = { tag: string; count: number }
@@ -33,7 +38,7 @@ export type SourceCount = { source_name: string; count: number }
 export type MonthCount = { month: string; count: number }
 
 const LIST_COLUMNS =
-  'slug, title, summary, title_en, summary_en, source_name, tags, published_at'
+  'slug, title, summary, title_en, summary_en, source_name, tags, published_at, emotion, importance'
 
 export async function listArticles(db: D1Database, limit = 100): Promise<ArticleListRow[]> {
   const { results } = await db
@@ -69,6 +74,22 @@ export async function recordView(db: D1Database, slug: string): Promise<void> {
     )
     .bind(slug)
     .run()
+}
+
+// "Hot Topics": the highest-importance articles from the most recent week of
+// posts. "This week" is anchored to the newest article's date (not the wall
+// clock) so it stays populated regardless of when the query runs.
+export async function listHotTopics(db: D1Database, limit = 8): Promise<ArticleListRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT ${LIST_COLUMNS} FROM articles
+       WHERE published_at >= (SELECT datetime(MAX(published_at), '-7 days') FROM articles)
+       ORDER BY importance DESC, published_at DESC
+       LIMIT ?1`,
+    )
+    .bind(limit)
+    .all<ArticleListRow>()
+  return results
 }
 
 // Most-viewed articles over the trailing 7 days (today + previous 6). Excludes
@@ -354,13 +375,13 @@ export async function upsertArticle(db: D1Database, a: Article): Promise<void> {
     .prepare(
       `INSERT INTO articles
          (slug, title, summary, body_md, title_en, summary_en, body_md_en,
-          source_url, source_name, tags, published_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+          emotion, source_url, source_name, tags, published_at, importance, og_image)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
        ON CONFLICT (slug) DO UPDATE SET
          title = ?2, summary = ?3, body_md = ?4,
-         title_en = ?5, summary_en = ?6, body_md_en = ?7,
-         source_url = ?8, source_name = ?9, tags = ?10, published_at = ?11,
-         updated_at = datetime('now')`,
+         title_en = ?5, summary_en = ?6, body_md_en = ?7, emotion = ?8,
+         source_url = ?9, source_name = ?10, tags = ?11, published_at = ?12,
+         importance = ?13, og_image = ?14, updated_at = datetime('now')`,
     )
     .bind(
       a.slug,
@@ -370,10 +391,13 @@ export async function upsertArticle(db: D1Database, a: Article): Promise<void> {
       a.title_en ?? null,
       a.summary_en ?? null,
       a.body_md_en ?? null,
+      a.emotion ?? null,
       a.source_url,
       a.source_name,
       JSON.stringify(a.tags),
       a.published_at,
+      a.importance ?? null,
+      a.og_image ?? null,
     )
     .run()
 }

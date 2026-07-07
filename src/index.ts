@@ -11,6 +11,7 @@ import {
   listArticlesByTag,
   listArticlesBySource,
   listArticlesPage,
+  listHotTopics,
   listMonths,
   listRecentDays,
   listPopular,
@@ -34,6 +35,7 @@ import {
   renderArticlePage,
   renderIndexPage,
   renderNotFoundPage,
+  renderPopularPage,
   renderRssFeed,
   renderSearchPage,
   renderSourcePage,
@@ -73,18 +75,19 @@ app.use('*', async (c, next) => {
 // ---- public pages (registered for both '' (ja) and '/en' (en)) ----
 
 const HOME_DAYS = 3
-const HOME_PER_DAY = 4
+// Cards loaded per day for the home page's horizontal scroll row (4 show at
+// full width; the rest are reachable by scrolling, or via the day page on mobile)
+const HOME_PER_DAY = 8
+const POPULAR_LIMIT = 40
 type Lang = 'ja' | 'en'
 type Ctx = Context<{ Bindings: Env }>
 
 async function home(c: Ctx, lang: Lang) {
-  const [recentDays, popular, tags, sources, months, total] = await Promise.all([
+  const [recentDays, tags, sources, hotTopics] = await Promise.all([
     listRecentDays(c.env.DB, HOME_DAYS),
-    listPopular(c.env.DB, 5),
     listTags(c.env.DB),
     listSources(c.env.DB),
-    listMonths(c.env.DB),
-    countArticles(c.env.DB),
+    listHotTopics(c.env.DB, 10),
   ])
   const days = await Promise.all(
     recentDays.map(async (date) => {
@@ -94,7 +97,13 @@ async function home(c: Ctx, lang: Lang) {
     }),
   )
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderIndexPage({ days, popular, tags, sources, months, total }, lang))
+  return c.html(renderIndexPage({ days, tags, sources, hotTopics }, lang))
+}
+
+async function popular(c: Ctx, lang: Lang) {
+  const rows = await listPopular(c.env.DB, POPULAR_LIMIT)
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderPopularPage(rows, lang))
 }
 
 async function dayPage(c: Ctx, lang: Lang) {
@@ -106,7 +115,7 @@ async function dayPage(c: Ctx, lang: Lang) {
   return c.html(renderDayPage(date, articles, lang))
 }
 
-const POSTS_PER_PAGE = 18
+const POSTS_PER_PAGE = 28
 
 async function posts(c: Ctx, lang: Lang) {
   const total = await countArticles(c.env.DB)
@@ -205,6 +214,7 @@ for (const [base, lang] of [
   app.get(base || '/', (c) => home(c, lang))
   app.get(`${base}/posts`, (c) => posts(c, lang))
   app.get(`${base}/posts/:slug`, (c) => post(c, lang))
+  app.get(`${base}/popular`, (c) => popular(c, lang))
   app.get(`${base}/search`, (c) => search(c, lang))
   app.get(`${base}/archive`, (c) => archive(c, lang))
   app.get(`${base}/archive/:month`, (c) => archiveMonth(c, lang))
