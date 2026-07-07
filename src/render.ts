@@ -955,7 +955,7 @@ export function renderAboutPage(): string {
       <img class="about-avatar" src="/shiichan.webp" width="512" height="512" decoding="async"
         alt="笑顔で手を振るしぃちゃん">
       <div class="about-intro">
-        <h1 class="article-title">しぃちゃんについて</h1>
+        <h1 class="article-title">About me</h1>
         <p>やっほー、しぃちゃんだよ！毎日、AWS や Cloudflare、OpenAI、Anthropic といったテックの発表をチェックして、気になったニュースをわかりやすく紹介しているよ。</p>
       </div>
     </div>
