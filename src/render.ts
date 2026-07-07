@@ -46,6 +46,22 @@ const esc = (s: string) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
   )
 
+// Insert a half-width space between Japanese (kana/kanji) and ASCII
+// alphanumerics, per Japanese typography ("Serverlessで" -> "Serverless で").
+const JP_CHARS = 'ぁ-ゖァ-ヺー㐀-䶿一-鿿ｦ-ﾟ'
+const JP_BEFORE_ANS = new RegExp('([' + JP_CHARS + '])([A-Za-z0-9])', 'g')
+const ANS_BEFORE_JP = new RegExp('([A-Za-z0-9])([' + JP_CHARS + '])', 'g')
+function autospace(s: string): string {
+  return s.replace(JP_BEFORE_ANS, '$1 $2').replace(ANS_BEFORE_JP, '$1 $2')
+}
+
+// Same, applied to rendered HTML: leaves tag markup and <pre>/<code> content untouched
+function autospaceHtml(html: string): string {
+  return html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>|<[^>]+>|[^<]+/g, (m) =>
+    m[0] === '<' ? m : autospace(m),
+  )
+}
+
 const fmtDate = (iso: string) => iso.slice(0, 10)
 
 // ---- i18n ----
@@ -75,9 +91,9 @@ const basePath = (lang: Lang): string => (lang === 'en' ? '/en' : '')
 
 // Article field pickers: prefer the English column, fall back to Japanese
 const artTitle = (r: { title: string; title_en: string | null }, lang: Lang): string =>
-  lang === 'en' ? r.title_en || r.title : r.title
+  lang === 'en' ? r.title_en || r.title : autospace(r.title)
 const artSummary = (r: { summary: string; summary_en: string | null }, lang: Lang): string =>
-  lang === 'en' ? r.summary_en || r.summary : r.summary
+  lang === 'en' ? r.summary_en || r.summary : autospace(r.summary)
 const artBody = (r: { body_md: string; body_md_en: string | null }, lang: Lang): string =>
   lang === 'en' ? r.body_md_en || r.body_md : r.body_md
 
@@ -1772,7 +1788,8 @@ export async function renderArticlePage(
       toc.push({ depth: tk.depth, id: tk.id, text: tk.text ?? '' })
     }
   }
-  const bodyHtml = marked.parser(tokens)
+  const rawBody = marked.parser(tokens)
+  const bodyHtml = lang === 'en' ? rawBody : autospaceHtml(rawBody)
 
   // Original-source card sits right after the greeting (the first paragraph)
   const linkCard = externalLinkCard(row.source_url, row.source_name, row.og_image)
@@ -1790,7 +1807,7 @@ export async function renderArticlePage(
       ${toc
         .map(
           (h) =>
-            `<li class="toc-h${h.depth}"><a href="#${h.id}" data-toc="${h.id}">${esc(h.text)}</a></li>`,
+            `<li class="toc-h${h.depth}"><a href="#${h.id}" data-toc="${h.id}">${esc(lang === 'en' ? h.text : autospace(h.text))}</a></li>`,
         )
         .join('\n      ')}
     </ul></nav>
