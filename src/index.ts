@@ -9,6 +9,7 @@ import {
   listArticlesByDay,
   listArticlesByMonth,
   listArticlesByTag,
+  listArticlesBySource,
   listArticlesPage,
   listMonths,
   listRecentDays,
@@ -35,6 +36,7 @@ import {
   renderNotFoundPage,
   renderRssFeed,
   renderSearchPage,
+  renderSourcePage,
   renderTagPage,
   renderTagsIndexPage,
 } from './render'
@@ -176,6 +178,14 @@ async function tag(c: Ctx, lang: Lang) {
   return c.html(renderTagPage(tagName, articles, lang))
 }
 
+async function source(c: Ctx, lang: Lang) {
+  const name = c.req.param('name') ?? ''
+  const articles = await listArticlesBySource(c.env.DB, name)
+  if (articles.length === 0) return c.notFound()
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderSourcePage(name, articles, lang))
+}
+
 function about(c: Ctx, lang: Lang) {
   c.header('cache-control', 'public, max-age=300')
   return c.html(renderAboutPage(lang))
@@ -201,6 +211,7 @@ for (const [base, lang] of [
   app.get(`${base}/day/:date`, (c) => dayPage(c, lang))
   app.get(`${base}/tags`, (c) => tags(c, lang))
   app.get(`${base}/tags/:tag`, (c) => tag(c, lang))
+  app.get(`${base}/source/:name`, (c) => source(c, lang))
   app.get(`${base}/about`, (c) => about(c, lang))
   app.get(`${base}/feed.xml`, (c) => feed(c, lang))
 }

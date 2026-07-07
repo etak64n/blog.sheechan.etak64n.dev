@@ -34,6 +34,8 @@ marked.use({
 
 const SITE_TITLE = 'shiichan blog'
 const SITE_ORIGIN = 'https://blog.shiichan.etak64n.dev'
+const GITHUB_BLOG = 'https://github.com/etak64n/blog.shiichan.etak64n.dev'
+const GITHUB_REPORTER = 'https://github.com/etak64n/shiichan-reporter'
 const SITE_DESCRIPTION =
   'AWS・Cloudflare・OpenAI・Anthropic の最新テックニュースを、しぃちゃんが毎日わかりやすくお届けするブログ'
 
@@ -219,7 +221,7 @@ function sourceColor(name: string): string {
   const n = name.toLowerCase()
   if (n.includes('aws') || n.includes('amazon')) return '#ff9900'
   if (n.includes('cloudflare')) return '#f6821f'
-  if (n.includes('openai')) return '#4ecb9b'
+  if (n.includes('openai')) return '#8b93a1' // OpenAI is monochrome (black/white)
   if (n.includes('anthropic') || n.includes('claude')) return '#d97757'
   if (n.includes('windows') || n.includes('microsoft')) return '#4cc2ff'
   return '#60B5FA'
@@ -231,7 +233,7 @@ function sourceBrand(name: string): string {
   const n = name.toLowerCase()
   if (n.includes('aws') || n.includes('amazon')) return '#C77A00'
   if (n.includes('cloudflare')) return '#C25E12'
-  if (n.includes('openai')) return '#1A9C78'
+  if (n.includes('openai')) return '#3a3f4b' // OpenAI mono: near-black in light, lightens in dark
   if (n.includes('anthropic') || n.includes('claude')) return '#B4653F'
   if (n.includes('windows') || n.includes('microsoft')) return '#2B7DC4'
   return '#2E6FD0'
@@ -452,16 +454,28 @@ button { -webkit-tap-highlight-color: transparent; }
   font-size: clamp(1.6rem, 4.2vw, 2.4rem); line-height: 1.3; margin: 0 0 .2em; text-wrap: balance;
 }
 .hero-copy .lede { color: var(--muted); margin: 0 0 1.1em; }
-/* Tags, sorted by count, in a single horizontally-scrollable row */
-.hero-tags {
+/* Categories (sources) and tags: single horizontally-scrollable rows */
+.hero-cats, .hero-tags {
   display: flex; flex-wrap: nowrap; gap: 8px;
   overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
-.hero-tags::-webkit-scrollbar { height: 6px; }
-.hero-tags::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
-.hero-tags::-webkit-scrollbar-track { background: transparent; }
+.hero-cats { margin-bottom: 8px; }
+.hero-tags { padding-bottom: 8px; }
+.hero-cats::-webkit-scrollbar, .hero-tags::-webkit-scrollbar { height: 6px; }
+.hero-cats::-webkit-scrollbar-thumb, .hero-tags::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+.hero-cats::-webkit-scrollbar-track, .hero-tags::-webkit-scrollbar-track { background: transparent; }
 .hero-tags .tag { flex: none; }
+.cat {
+  flex: none; display: inline-flex; align-items: center; gap: .5em;
+  font-family: var(--mono); font-size: .74rem; font-weight: 600; white-space: nowrap;
+  color: var(--text); text-decoration: none;
+  border: 1px solid var(--line-strong); border-radius: 999px; padding: .3em .9em;
+  background: var(--surface); transition: border-color .15s ease, color .15s ease;
+}
+.cat i { width: 8px; height: 8px; border-radius: 999px; flex: none; background: var(--src-color, var(--accent)); }
+.cat:hover { border-color: var(--accent); color: var(--primary); }
+.cat .n { color: var(--muted); }
 
 /* ---- wave divider ---- */
 .wave-divider { color: var(--accent); margin: 30px 0 4px; }
@@ -776,6 +790,7 @@ button { -webkit-tap-highlight-color: transparent; }
   font-size: clamp(1.7rem, 5vw, 2.4rem); margin: 0 0 .2em;
 }
 .page-head .count { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+.page-head .src-head { margin: 0 0 .3em; }
 .list-section { padding-top: 24px; padding-bottom: 64px; }
 .notfound { text-align: center; padding-top: 100px; padding-bottom: 130px; }
 .notfound h1 { font-family: var(--display); font-size: 2rem; color: var(--primary); margin: 0 0 .4em; }
@@ -1033,7 +1048,7 @@ ${main}
   <div class="footer-inner">
     <div class="wrap">
       <span class="fbrand">${WAVE_MARK}shiichan blog</span>
-      <span>${esc(t.footerRight)} / <a href="${base}/search">Search</a> / <a href="${base}/archive">Archive</a> / <a href="${base}/feed.xml">RSS</a> <span class="jelly" aria-hidden="true">🪼</span></span>
+      <span class="flinks">${esc(t.footerRight)} / <a href="${base}/search">Search</a> / <a href="${base}/archive">Archive</a> / <a href="${base}/feed.xml">RSS</a> / GitHub <a href="${GITHUB_BLOG}" rel="noopener">blog</a> · <a href="${GITHUB_REPORTER}" rel="noopener">reporter</a> <span class="jelly" aria-hidden="true">🪼</span></span>
     </div>
   </div>
 </footer>
@@ -1049,6 +1064,12 @@ function tagChip(base: string, tag: string, count?: number, big = false): string
 
 function sourceBadge(name: string): string {
   return `<span class="src" style="--src-color:${sourceColor(name)}"><i></i>${esc(name)}</span>`
+}
+
+// Category chip: a source (e.g. "Cloudflare Changelog") linking to its page
+function sourceCatChip(base: string, name: string, count?: number): string {
+  const n = count !== undefined ? `<span class="n">${count}</span>` : ''
+  return `<a class="cat" style="--src-color:${sourceColor(name)}" href="${base}/source/${encodeURIComponent(name)}"><i></i>${esc(name)}${n}</a>`
 }
 
 function sourceList(sources: SourceCount[]): string {
@@ -1142,6 +1163,7 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
   <div class="hero-copy">
     <h1>${esc(t.heroH1)}</h1>
     <p class="lede">${esc(t.heroLede)}</p>
+    <div class="hero-cats">${sources.map((s) => sourceCatChip(base, s.source_name, s.count)).join('')}</div>
     <div class="hero-tags">${tags.map((tg) => tagChip(base, tg.tag, tg.count)).join('')}</div>
   </div>
 </section>`
@@ -1432,6 +1454,28 @@ export function renderDayPage(date: string, rows: ArticleListRow[], lang: Lang):
       title: `${label} | ${SITE_TITLE}`,
       description: lang === 'en' ? `Posts from ${label}` : `${label}の記事一覧`,
       canonicalPath: `/day/${date}`,
+      lang,
+    },
+    main,
+  )
+}
+
+export function renderSourcePage(name: string, rows: ArticleListRow[], lang: Lang): string {
+  const t = T[lang]
+  const main = `
+<section class="page-head wrap">
+  <p class="src-head">${sourceBadge(name)}</p>
+  <h1>${esc(name)}</h1>
+  <p class="count">${t.postsCount(rows.length)}</p>
+</section>
+<section class="list-section wrap" id="main">
+  <div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+</section>`
+  return layout(
+    {
+      title: `${name} | ${SITE_TITLE}`,
+      description: lang === 'en' ? `Posts from ${name}` : `${name} の記事一覧`,
+      canonicalPath: `/source/${encodeURIComponent(name)}`,
       lang,
     },
     main,

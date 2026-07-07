@@ -107,6 +107,21 @@ export async function listArticlesByTag(
   return results
 }
 
+export async function listArticlesBySource(
+  db: D1Database,
+  name: string,
+  limit = 300,
+): Promise<ArticleListRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT ${LIST_COLUMNS} FROM articles
+       WHERE source_name = ?1 ORDER BY published_at DESC LIMIT ?2`,
+    )
+    .bind(name, limit)
+    .all<ArticleListRow>()
+  return results
+}
+
 export async function listTags(db: D1Database, limit = 60): Promise<TagCount[]> {
   const { results } = await db
     .prepare(
