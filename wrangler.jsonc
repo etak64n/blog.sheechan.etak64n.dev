@@ -15,8 +15,7 @@
     {
       "binding": "DB",
       "database_name": "blog-sheechan",
-      // Replace with the id from `wrangler d1 create blog-sheechan`
-      "database_id": "REPLACE_WITH_wrangler_d1_create_OUTPUT",
+      "database_id": "5c3f25dd-085f-4b13-b08d-31d31e2a2f4c",
       "migrations_dir": "migrations"
     }
   ],
