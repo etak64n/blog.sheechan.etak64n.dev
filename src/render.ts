@@ -397,12 +397,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .prose th, .prose td { border: 1px solid var(--line); padding: .5em .9em; text-align: left; }
 .prose th { background: var(--panel-2); font-family: var(--mono); font-size: .78rem; }
 .prose img { max-width: 100%; border-radius: 10px; }
-.pipeline {
-  font-family: var(--mono); font-size: .8rem; line-height: 2; color: var(--dim);
-  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-  padding: 1em 1.3em; overflow-x: auto; white-space: nowrap;
-}
-.pipeline b { color: var(--cyan); font-weight: 600; }
 
 /* ---- tag page / misc ---- */
 .page-head { padding-top: 52px; padding-bottom: 8px; }
@@ -531,8 +525,8 @@ ${opts.head ?? ''}
 ${main}
 <footer class="site-footer">
   <div class="wrap">
-    <span>${esc(SITE_TITLE)} — auto-generated tech news, written by sheechan</span>
-    <span>daily update 10:07 JST / <a href="/feed.xml">RSS</a> / Hono + Cloudflare Workers + D1</span>
+    <span>${esc(SITE_TITLE)} — daily tech news, written by sheechan</span>
+    <span>毎日更新 / <a href="/feed.xml">RSS</a></span>
   </div>
 </footer>
 <script>${THEME_TOGGLE_SCRIPT}</script>
@@ -589,13 +583,13 @@ export function renderIndexPage(
 
   const hero = `
 <section class="hero wrap">
-  <p class="eyebrow">// daily tech report — fully automated</p>
+  <p class="eyebrow">// sheechan's daily tech report</p>
   <h1>Sheechan<br>Tech Report</h1>
   <p class="lede">${esc(SITE_DESCRIPTION)}だよ。むずかしいニュースも、しぃちゃんと一緒ならこわくない!</p>
   <div class="stats">
     <span class="stat">ARTICLES<b>${totalArticles}</b></span>
     <span class="stat">SOURCES<b>${sources.length}</b></span>
-    <span class="stat">UPDATE<b>10:07 JST</b></span>
+    <span class="stat">UPDATE<b>DAILY</b></span>
   </div>
 </section>`
 
@@ -624,7 +618,7 @@ ${
 </div>
 <div class="panel" style="animation-delay:280ms">
   <h2 class="section-title">About</h2>
-  <p class="about-text">このブログは全自動。<b>しぃちゃん</b>が毎日 10:07 JST にテックソースを巡回して、新着ニュースをわかりやすい日本語で紹介しているよ。記事 URL の末尾に <b>.md</b> を付けると Markdown 原文がそのまま読めるからね!</p>
+  <p class="about-text">テックニュースが大好きな<b>しぃちゃん</b>が、毎日気になった発表をわかりやすく紹介するブログだよ。むずかしい話も、いっしょに読めばこわくない!</p>
   <a class="panel-more" href="/about">MORE ${icon('arrow-up-right')}</a>
 </div>`
 
@@ -686,25 +680,30 @@ export function renderAboutPage(sources: SourceCount[]): string {
   <article>
     <h1 class="article-title">このブログについて</h1>
     <div class="prose">
-      <p>「${esc(SITE_TITLE)}」は、AWS・Cloudflare・OpenAI・Anthropic などのテックニュースを毎日お届けする<strong>全自動運営</strong>のブログだよ。新着のチェックから記事の執筆・公開まで、ぜんぶ自動で動いているの。いまは ${sources.length} ソースから ${totalArticles} 本の記事を公開中!</p>
-      <h2>しぃちゃんについて</h2>
-      <p>記事を書いているのは「しぃちゃん」。元気いっぱいだけど、技術的な正確さにはこだわる案内役だよ。むずかしい発表も「なにが発表されたの?」「今までどうだったの?」「これからどうなるの?」の流れでかみくだいて、最後の Dive Deep でしっかり深掘りするスタイルなの。</p>
-      <h2>仕組み</h2>
-      <div class="pipeline">GitHub Actions <b>(毎日 10:07 JST)</b> → 各ソースの新着チェック → 記事の自動生成 → OIDC 認証つき API で入稿 → <b>Cloudflare D1</b> に保存 → <b>Cloudflare Workers</b> が配信</div>
-      <p>入稿 API は GitHub Actions の OIDC トークンでしか呼び出せないようにしているから、第三者が勝手に記事を投稿することはできないよ。</p>
-      <h2>Markdown でも読めるよ</h2>
-      <p>記事 URL の末尾に <code>.md</code> を付けると、front matter つきの Markdown 原文がそのまま返ってくるの。エディタで読みたいときや、AI に渡したいときに便利だよ。</p>
-      <pre><code>curl ${esc(SITE_ORIGIN)}/posts/&lt;slug&gt;.md</code></pre>
-      <h2>巡回中のソース</h2>
+      <p>やっほー、しぃちゃんだよ!「${esc(SITE_TITLE)}」に来てくれてありがとう。ここは、しぃちゃんが気になったテックニュースを毎日紹介するブログなの。いまは ${sources.length} つのサイトを追いかけて、${totalArticles} 本の記事を公開中!</p>
+      <h2>しぃちゃんってどんな子?</h2>
+      <p>新しい技術の発表を追いかけるのが大好きで、AWS や Cloudflare、OpenAI、Anthropic のニュースを毎日チェックしてるよ。むずかしい発表を「結局なにがすごいの?」ってところまで噛みくだいて伝えるのが得意なの。元気いっぱいだけど、技術的な正確さにはこだわる派だよ。</p>
+      <h2>記事の読み方</h2>
+      <p>どの記事も同じ流れで書いているから、はじめてでも読みやすいと思うよ。</p>
+      <ul>
+        <li><strong>なにが発表されたの?</strong> — まずは発表の内容をぎゅっと要約</li>
+        <li><strong>今までどうだったの?</strong> — これまでの課題や背景をおさらい</li>
+        <li><strong>これからどうなるの?</strong> — この発表でなにが変わるのかを整理</li>
+        <li><strong>Dive Deep</strong> — 気になる人向けに、技術の中身をじっくり深掘り</li>
+      </ul>
+      <p>タグや原文へのリンクも付けているから、気になったら元の発表もぜひ読んでみてね。</p>
+      <h2>いつもチェックしているサイト</h2>
       ${sourceList(sources)}
-      <p>更新情報は RSS(<a href="/feed.xml">/feed.xml</a>)でも配信しているよ。それじゃあ、また記事で会おうね!</p>
+      <h2>もっと便利に読むには</h2>
+      <p>更新は RSS(<a href="/feed.xml">/feed.xml</a>)で受け取れるよ。それから、記事 URL の末尾に <code>.md</code> を付けると Markdown 版でも読めるの。ちょっとした裏ワザだね。</p>
+      <p>それじゃあ、また記事で会おうね!</p>
     </div>
   </article>
 </div>`
   return layout(
     {
       title: `About | ${SITE_TITLE}`,
-      description: `${SITE_TITLE} の紹介: 全自動テックニュースブログの仕組み`,
+      description: `${SITE_TITLE} としぃちゃんの紹介`,
       canonicalPath: '/about',
       nav: 'about',
     },

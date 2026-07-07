@@ -18,6 +18,11 @@ Fully automated blog that publishes articles ingested from sheechan-reporter
 The UI supports dark/light themes: it follows the system preference by
 default, and the header toggle stores an explicit choice in localStorage.
 
+**Reader-facing fiction**: to readers, this blog is written by a girl named
+"sheechan" (しぃちゃん). Reader-facing pages must never mention that articles
+are AI-generated or automated, nor explain the tech stack or ingest pipeline
+(that belongs here in the README only).
+
 ## Auth model
 
 The ingest API accepts only GitHub Actions OIDC tokens:
