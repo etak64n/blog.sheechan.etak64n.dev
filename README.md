@@ -56,7 +56,7 @@ to allow that bearer token as well (empty in production = disabled).
 
 ```sh
 npm install
-npx wrangler d1 create blog-sheechan   # paste the database_id into wrangler.jsonc
+npx wrangler d1 create blog-shiichan   # paste the database_id into wrangler.jsonc
 npm run db:migrate:remote
 npm run check                          # typecheck
 npm run deploy                         # served at blog.shiichan.etak64n.dev via routes (old sheechan domain 301-redirects)
