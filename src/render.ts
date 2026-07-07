@@ -407,6 +407,20 @@ button { -webkit-tap-highlight-color: transparent; }
 .more-row { margin-top: 24px; }
 .more-row .panel-more { font-size: .82rem; }
 
+/* ---- about hero ---- */
+.about-hero { display: flex; align-items: center; gap: 26px; margin-bottom: 8px; }
+.about-avatar {
+  width: 150px; height: 150px; flex: none; border-radius: 999px; object-fit: cover;
+  background: var(--surface); border: 3px solid var(--surface);
+  box-shadow: 0 0 0 3px var(--accent), var(--shadow-lift);
+}
+.about-intro .article-title { margin: 0 0 .3em; }
+.about-intro p { margin: 0; color: var(--muted); }
+@media (max-width: 560px) {
+  .about-hero { flex-direction: column; text-align: center; gap: 18px; }
+  .about-avatar { width: 128px; height: 128px; }
+}
+
 /* ---- article page ---- */
 .article-wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
 .backlink {
@@ -924,9 +938,15 @@ export function renderAboutPage(sources: SourceCount[]): string {
 <div class="article-wrap" id="main">
   <p><a class="backlink" href="/">${icon('arrow-left')}INDEX</a></p>
   <article>
-    <h1 class="article-title">このブログについて</h1>
+    <div class="about-hero">
+      <img class="about-avatar" src="/shiichan.webp" width="512" height="512" decoding="async"
+        alt="笑顔で手を振るしぃちゃん">
+      <div class="about-intro">
+        <h1 class="article-title">このブログについて</h1>
+        <p>やっほー、しぃちゃんだよ！「${esc(SITE_TITLE)}」に来てくれてありがとう。ここは、しぃちゃんが気になったテックニュースを毎日紹介するブログなの。いまは ${sources.length} つのサイトを追いかけて、${totalArticles} 本の記事を公開中！</p>
+      </div>
+    </div>
     <div class="prose">
-      <p>やっほー、しぃちゃんだよ！「${esc(SITE_TITLE)}」に来てくれてありがとう。ここは、しぃちゃんが気になったテックニュースを毎日紹介するブログなの。いまは ${sources.length} つのサイトを追いかけて、${totalArticles} 本の記事を公開中！</p>
       <h2>しぃちゃんってどんな子？</h2>
       <p>新しい技術の発表を追いかけるのが大好きで、AWS や Cloudflare、OpenAI、Anthropic のニュースを毎日チェックしてるよ。むずかしい発表を「結局なにがすごいの？」ってところまで噛みくだいて伝えるのが得意なの。元気いっぱいだけど、技術的な正確さにはこだわる派だよ。</p>
       <h2>記事の読み方</h2>
@@ -952,6 +972,7 @@ export function renderAboutPage(sources: SourceCount[]): string {
       description: `${SITE_TITLE} としぃちゃんの紹介`,
       canonicalPath: '/about',
       nav: 'about',
+      head: `<meta property="og:image" content="${SITE_ORIGIN}/shiichan.webp">`,
     },
     main,
   )
