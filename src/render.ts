@@ -250,14 +250,13 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .nav-search { display: none; }
 
-/* ---- hero (banner) ---- */
-.hero { padding-top: 30px; padding-bottom: 8px; }
+/* ---- hero (full-bleed banner) ---- */
 .hero-banner {
   display: block; width: 100%; height: auto; aspect-ratio: 1731 / 909;
-  border-radius: 20px; border: 1px solid var(--line);
-  background: #fff; box-shadow: var(--shadow-soft);
+  background: #fff;
 }
-.hero-copy { margin: 22px 0 4px; }
+.hero { padding-top: 0; padding-bottom: 8px; }
+.hero-copy { margin: 26px 0 4px; }
 .hero-copy h1 {
   font-family: var(--display); font-weight: 700; color: var(--heading);
   font-size: clamp(1.6rem, 4.2vw, 2.4rem); line-height: 1.3; margin: 0 0 .2em; text-wrap: balance;
@@ -332,21 +331,6 @@ button { -webkit-tap-highlight-color: transparent; }
   :root:not([data-theme]) .genre-tag { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
 }
 :root[data-theme='dark'] .genre-tag { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
-@media (min-width: 700px) {
-  .card.wide { grid-column: span 2; }
-  .card.wide { flex-direction: row; }
-  .card.wide .thumb { aspect-ratio: auto; width: 42%; min-height: 100%; }
-  .card.wide .card-body { flex: 1; justify-content: center; }
-}
-.card.featured { grid-column: 1 / -1; }
-@media (min-width: 640px) {
-  .card.featured { flex-direction: row; }
-  .card.featured .thumb { aspect-ratio: auto; width: 46%; }
-  .card.featured .card-body { flex: 1; justify-content: center; padding: 26px 30px; }
-}
-.card.featured .thumb .wave { height: 30px; }
-.card.featured .card-body h2 { font-size: 1.4rem; }
-.card.featured .summary { -webkit-line-clamp: 3; font-size: .92rem; }
 /* ---- tags (chips) ---- */
 .tag-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tag {
@@ -566,7 +550,6 @@ button { -webkit-tap-highlight-color: transparent; }
   .site-nav { gap: 0; font-size: .8rem; }
   .site-nav a.textlink { padding: .6em .38em; }
   .nav-icon { width: 32px; height: 32px; }
-  .card.featured { padding: 20px 22px; }
 }
 @media (max-width: 480px) {
   .nav-rss { display: none; }
@@ -746,32 +729,29 @@ function sourceList(sources: SourceCount[]): string {
 // Thumbnail wave line (echoes the aquarius motif), white over the gradient
 const THUMB_WAVE = `<svg class="wave" viewBox="0 0 480 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 Q 20 4 40 14 T 80 14 T 120 14 T 160 14 T 200 14 T 240 14 T 280 14 T 320 14 T 360 14 T 400 14 T 440 14 T 480 14" fill="none" stroke="currentColor" stroke-width="3"/></svg>`
 
+// Uniform article card: every card is the same size. `latest` only adds a
+// LATEST ribbon; `summaryHtml` (search snippets) shows a short excerpt.
 function articleCard(
   r: ArticleListRow,
   index: number,
-  opts: { featured?: boolean; wide?: boolean; summaryHtml?: string } = {},
+  opts: { latest?: boolean; summaryHtml?: string } = {},
 ): string {
-  const { featured = false, wide = false, summaryHtml } = opts
+  const { latest = false, summaryHtml } = opts
   const delay = Math.min(index * 45, 500)
-  const heading = featured ? 'h2' : 'h3'
-  const classes = ['card', featured && 'featured', wide && 'wide'].filter(Boolean).join(' ')
   const brand = sourceBrand(r.source_name)
   // Thumbnail wash: blue-family gradient (per design system) with only a faint
   // brand tint so each source is subtly recognizable without going muddy
   const thumbStyle = `--brand:${brand};--thumb-a:color-mix(in srgb, ${brand} 12%, #DCEBFA);--thumb-b:color-mix(in srgb, ${brand} 20%, var(--aqua))`
-  const showSummary = featured || summaryHtml !== undefined
-  const summary = showSummary
-    ? `<p class="summary">${summaryHtml ?? esc(r.summary)}</p>`
-    : ''
+  const summary = summaryHtml !== undefined ? `<p class="summary">${summaryHtml}</p>` : ''
   return `
-<article class="${classes}" style="animation-delay:${delay}ms">
+<article class="card" style="animation-delay:${delay}ms">
   <div class="thumb" style="${thumbStyle}" aria-hidden="true">
-    ${featured ? '<span class="latest-label">LATEST</span>' : ''}
+    ${latest ? '<span class="latest-label">LATEST</span>' : ''}
     ${THUMB_WAVE}
   </div>
   <div class="card-body">
     <span class="genre-tag" style="--brand:${brand}">${esc(r.source_name)}</span>
-    <${heading}><a href="/posts/${esc(r.slug)}">${esc(r.title)}</a></${heading}>
+    <h3><a href="/posts/${esc(r.slug)}">${esc(r.title)}</a></h3>
     <p class="card-meta">${esc(fmtDate(r.published_at))}</p>
     ${summary}
   </div>
@@ -814,13 +794,12 @@ type IndexData = {
 
 export function renderIndexPage(data: IndexData): string {
   const { latest: rows, popular, tags, sources, months, total } = data
-  const [latest, ...rest] = rows
 
   const hero = `
+<img class="hero-banner" src="/hero.webp" srcset="/hero-800.webp 800w, /hero-1200.webp 1200w, /hero.webp 1731w"
+  sizes="100vw" width="1731" height="909"
+  alt="ノートパソコンで作業する、笑顔のしぃちゃん — Shiichan Tech Blog" fetchpriority="high" decoding="async">
 <section class="hero wrap">
-  <img class="hero-banner" src="/hero.webp" srcset="/hero-800.webp 800w, /hero.webp 1400w"
-    sizes="(max-width: 1180px) 100vw, 1100px" width="1731" height="909"
-    alt="ノートパソコンで作業する、笑顔のしぃちゃん — Shiichan Tech Blog" fetchpriority="high" decoding="async">
   <div class="hero-copy">
     <h1>テックニュースを、わかりやすく。</h1>
     <p class="lede">しぃちゃんが、AWS・Cloudflare・OpenAI・Anthropic の最新ニュースを毎日チェックして、やさしくまとめてお届けするよ。むずかしい発表も、これを読めばだいじょうぶ！</p>
@@ -832,18 +811,12 @@ export function renderIndexPage(data: IndexData): string {
   </div>
 </section>`
 
-  // Bento rhythm: every fifth grid card stretches to a full row
-  const mainCol = latest
+  // One uniform grid; the newest card carries a LATEST ribbon
+  const mainCol = rows.length
     ? `
-<h2 class="section-title">Latest Post</h2>
-${articleCard(latest, 0, { featured: true })}
-${
-  rest.length
-    ? `<h2 class="section-title">Latest ${rows.length} Posts</h2>
-<div class="card-grid">${rest.map((r, i) => articleCard(r, i + 1, { wide: i % 5 === 3 })).join('\n')}</div>
+<h2 class="section-title">Latest Posts</h2>
+<div class="card-grid">${rows.map((r, i) => articleCard(r, i, { latest: i === 0 })).join('\n')}</div>
 <p class="more-row"><a class="panel-more" href="/posts">全ての記事を見る ${icon('arrow-up-right')}</a></p>`
-    : ''
-}`
     : '<p>まだ記事がありません。</p>'
 
   const sideCol = `
