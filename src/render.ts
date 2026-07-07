@@ -822,8 +822,8 @@ export function renderIndexPage(data: IndexData): string {
     sizes="(max-width: 1180px) 100vw, 1100px" width="1731" height="909"
     alt="ノートパソコンで作業する、笑顔のしぃちゃん — Shiichan Tech Blog" fetchpriority="high" decoding="async">
   <div class="hero-copy">
-    <h1>技術を、もっと身近に。</h1>
-    <p class="lede">しぃちゃんと一緒に、AWS・Cloudflare・OpenAI・Anthropic の最新ニュースを「やってみよう！」むずかしい話も、いっしょならこわくない！</p>
+    <h1>テックニュースを、わかりやすく。</h1>
+    <p class="lede">しぃちゃんが、AWS・Cloudflare・OpenAI・Anthropic の最新ニュースを毎日チェックして、やさしくまとめてお届けするよ。むずかしい発表も、これを読めばだいじょうぶ！</p>
     <div class="stats">
       <span class="stat">ARTICLES<b>${total}</b></span>
       <span class="stat">SOURCES<b>${sources.length}</b></span>
