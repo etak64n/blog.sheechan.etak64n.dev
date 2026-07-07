@@ -10,11 +10,14 @@ import {
   upsertArticle,
 } from './db'
 import {
+  renderAboutPage,
   renderArticleMarkdown,
   renderArticlePage,
   renderIndexPage,
   renderNotFoundPage,
+  renderRssFeed,
   renderTagPage,
+  renderTagsIndexPage,
 } from './render'
 import { articleSchema } from './schema'
 
@@ -51,11 +54,30 @@ app.get('/posts/:slug', async (c) => {
   return c.html(await renderArticlePage(article))
 })
 
+app.get('/tags', async (c) => {
+  const [tags, sources] = await Promise.all([listTags(c.env.DB), listSources(c.env.DB)])
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderTagsIndexPage(tags, sources))
+})
+
 app.get('/tags/:tag', async (c) => {
   const articles = await listArticlesByTag(c.env.DB, c.req.param('tag'))
   if (articles.length === 0) return c.notFound()
   c.header('cache-control', 'public, max-age=300')
   return c.html(renderTagPage(c.req.param('tag'), articles))
+})
+
+app.get('/about', async (c) => {
+  const sources = await listSources(c.env.DB)
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderAboutPage(sources))
+})
+
+app.get('/feed.xml', async (c) => {
+  const articles = await listArticles(c.env.DB, 30)
+  c.header('cache-control', 'public, max-age=900')
+  c.header('content-type', 'application/rss+xml; charset=utf-8')
+  return c.body(renderRssFeed(articles))
 })
 
 // ---- ingest API (GitHub Actions OIDC) ----

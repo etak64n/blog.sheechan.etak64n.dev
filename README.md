@@ -8,9 +8,15 @@ Fully automated blog that publishes articles ingested from sheechan-reporter
 - `GET /` — index: latest post featured, all posts, tag/source sidebar
 - `GET /posts/:slug` — article page (Markdown rendered server-side)
 - `GET /posts/:slug.md` — raw Markdown with YAML front matter (`text/markdown`)
+- `GET /tags` — tag cloud (sized by article count)
 - `GET /tags/:tag` — articles carrying the tag (404 when the tag has no articles)
+- `GET /about` — about page (how the automation works, sources)
+- `GET /feed.xml` — RSS 2.0 feed (latest 30 articles)
 - `POST /api/articles` — ingest (upsert), GitHub Actions OIDC auth
 - `DELETE /api/articles/:slug` — remove an article (rollback path), same auth
+
+The UI supports dark/light themes: it follows the system preference by
+default, and the header toggle stores an explicit choice in localStorage.
 
 ## Auth model
 
