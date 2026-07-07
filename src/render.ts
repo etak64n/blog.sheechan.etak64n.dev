@@ -1,5 +1,6 @@
 import { marked } from 'marked'
-import type { ArticleListRow, ArticleRow, MonthCount, SourceCount, TagCount } from './db'
+import type { ArticleListRow, ArticleRow, MonthCount, SearchHit, SourceCount, TagCount } from './db'
+import { SNIP_CLOSE, SNIP_OPEN } from './db'
 
 const SITE_TITLE = 'shiichan blog'
 const SITE_ORIGIN = 'https://blog.shiichan.etak64n.dev'
@@ -444,6 +445,10 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .search-btn:hover { background: var(--tag-bg-hover); }
 .search-hint { color: var(--dim); font-size: .88rem; }
+.card mark {
+  background: var(--selection); color: var(--cyan-soft);
+  border-radius: 3px; padding: 0 .1em;
+}
 
 /* ---- archive ---- */
 .month-list {
@@ -639,9 +644,9 @@ function sourceList(sources: SourceCount[]): string {
 function articleCard(
   r: ArticleListRow,
   index: number,
-  opts: { featured?: boolean; wide?: boolean } = {},
+  opts: { featured?: boolean; wide?: boolean; summaryHtml?: string } = {},
 ): string {
-  const { featured = false, wide = false } = opts
+  const { featured = false, wide = false, summaryHtml } = opts
   const tags = parseTags(r.tags)
   const chips = tags
     .slice(0, featured || wide ? 8 : 4)
@@ -655,9 +660,14 @@ function articleCard(
   ${featured ? '<span class="corner tl" aria-hidden="true"></span><span class="corner br" aria-hidden="true"></span><span class="latest-label">LATEST</span>' : ''}
   <${heading}><a href="/posts/${esc(r.slug)}">${esc(r.title)}</a></${heading}>
   <p class="meta">${sourceBadge(r.source_name)}<span>${esc(fmtDate(r.published_at))}</span></p>
-  <p class="summary">${esc(r.summary)}</p>
+  <p class="summary">${summaryHtml ?? esc(r.summary)}</p>
   ${chips ? `<p class="tag-row">${chips}</p>` : ''}
 </article>`
+}
+
+// FTS snippets arrive with control-char markers; escape first, then mark
+function snippetHtml(snip: string): string {
+  return esc(snip).replaceAll(SNIP_OPEN, '<mark>').replaceAll(SNIP_CLOSE, '</mark>')
 }
 
 export function renderIndexPage(
@@ -812,14 +822,18 @@ export function renderAboutPage(sources: SourceCount[]): string {
   )
 }
 
-export function renderSearchPage(query: string, rows: ArticleListRow[]): string {
+export function renderSearchPage(query: string, rows: SearchHit[]): string {
   const count = query
     ? `${rows.length} HIT${rows.length === 1 ? '' : 'S'} FOR &ldquo;${esc(query)}&rdquo;`
     : 'TYPE KEYWORDS TO SEARCH'
   const results = !query
     ? '<p class="search-hint">タイトル・本文からキーワードで探せるよ。スペース区切りで AND 検索になるからね。</p>'
     : rows.length
-      ? `<div class="card-grid">${rows.map((r, i) => articleCard(r, i)).join('\n')}</div>`
+      ? `<div class="card-grid">${rows
+          .map((r, i) =>
+            articleCard(r, i, { summaryHtml: r.snip ? snippetHtml(r.snip) : undefined }),
+          )
+          .join('\n')}</div>`
       : `<p class="search-hint">「${esc(query)}」に合う記事は見つからなかったよ。別のキーワードでも試してみてね。</p>`
   const main = `
 <section class="page-head wrap">

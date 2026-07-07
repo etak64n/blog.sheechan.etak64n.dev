@@ -70,29 +70,73 @@ export async function listSources(db: D1Database): Promise<SourceCount[]> {
   return results
 }
 
-// Case-insensitive (ASCII) substring search; every term must match somewhere
-// in title/summary/body. LIKE is plenty at this scale — revisit FTS5 when the
-// table grows to thousands of rows.
+export type SearchHit = ArticleListRow & { snip: string | null }
+
+// Snippet match markers, replaced with <mark> after HTML-escaping at render time
+export const SNIP_OPEN = ''
+export const SNIP_CLOSE = ''
+
+const splitTerms = (query: string) =>
+  query
+    .split(/[\s　]+/)
+    .filter(Boolean)
+    .slice(0, 5)
+
+// Full-text search via FTS5 (trigram tokenizer, bm25 ranking weighted toward
+// titles, highlighted snippets). Trigram cannot index terms shorter than
+// 3 characters, so those queries fall back to a LIKE scan.
 export async function searchArticles(
   db: D1Database,
   query: string,
   limit = 50,
-): Promise<ArticleListRow[]> {
-  const terms = query
-    .replace(/[\\%_]/g, (c) => `\\${c}`)
-    .split(/[\s　]+/)
-    .filter(Boolean)
-    .slice(0, 5)
+): Promise<SearchHit[]> {
+  const terms = splitTerms(query)
   if (terms.length === 0) return []
-  const where = terms
+
+  if (terms.every((t) => [...t].length >= 3)) {
+    const match = terms.map((t) => `"${t.replace(/"/g, '""')}"`).join(' AND ')
+    try {
+      const { results } = await db
+        .prepare(
+          `SELECT ${LIST_COLUMNS
+            .split(', ')
+            .map((c) => `a.${c}`)
+            .join(', ')},
+             snippet(articles_fts, -1, ?2, ?3, '…', 48) AS snip
+           FROM articles_fts f JOIN articles a ON a.rowid = f.rowid
+           WHERE articles_fts MATCH ?1
+           ORDER BY bm25(articles_fts, 10.0, 4.0, 1.0) LIMIT ${limit}`,
+        )
+        .bind(match, SNIP_OPEN, SNIP_CLOSE)
+        .all<SearchHit>()
+      return results
+    } catch (err) {
+      // Never let a ranking upgrade break search
+      console.log(
+        JSON.stringify({ level: 'error', message: `fts search failed: ${String(err)}` }),
+      )
+    }
+  }
+
+  return searchArticlesLike(db, terms, limit)
+}
+
+async function searchArticlesLike(
+  db: D1Database,
+  terms: string[],
+  limit: number,
+): Promise<SearchHit[]> {
+  const escaped = terms.map((t) => t.replace(/[\\%_]/g, (c) => `\\${c}`))
+  const where = escaped
     .map((_, i) => `(title || ' ' || summary || ' ' || body_md) LIKE ?${i + 1} ESCAPE '\\'`)
     .join(' AND ')
   const { results } = await db
     .prepare(
-      `SELECT ${LIST_COLUMNS} FROM articles WHERE ${where} ORDER BY published_at DESC LIMIT ${limit}`,
+      `SELECT ${LIST_COLUMNS}, NULL AS snip FROM articles
+       WHERE ${where} ORDER BY published_at DESC LIMIT ${limit}`,
     )
-    .bind(...terms.map((t) => `%${t}%`))
-    .all<ArticleListRow>()
+    .bind(...escaped.map((t) => `%${t}%`))
+    .all<SearchHit>()
   return results
 }
 
