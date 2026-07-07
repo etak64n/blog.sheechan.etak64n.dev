@@ -208,7 +208,9 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 /* ---- hero ---- */
-.hero { padding: 64px 0 40px; }
+/* Sections that share an element with .wrap must not reset its side padding,
+   so vertical rhythm uses longhand padding only */
+.hero { padding-top: 64px; padding-bottom: 40px; }
 .hero .eyebrow {
   font-family: var(--mono); font-size: .75rem; letter-spacing: .18em;
   color: var(--cyan); text-transform: uppercase; margin: 0 0 .8em;
@@ -403,7 +405,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .pipeline b { color: var(--cyan); font-weight: 600; }
 
 /* ---- tag page / misc ---- */
-.page-head { padding: 52px 0 8px; }
+.page-head { padding-top: 52px; padding-bottom: 8px; }
 .page-head h1 {
   font-family: var(--mono); font-weight: 600; font-size: clamp(1.6rem, 5vw, 2.4rem);
   margin: 0 0 .2em;
@@ -411,8 +413,8 @@ button { -webkit-tap-highlight-color: transparent; }
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .page-head .count { font-family: var(--mono); font-size: .8rem; color: var(--dim); letter-spacing: .1em; }
-.list-section { padding: 26px 0 70px; }
-.notfound { text-align: center; padding: 120px 0 140px; }
+.list-section { padding-top: 26px; padding-bottom: 70px; }
+.notfound { text-align: center; padding-top: 120px; padding-bottom: 140px; }
 .notfound h1 { font-family: var(--mono); font-size: 2rem; color: var(--cyan); margin: 0 0 .4em; }
 .notfound p { color: var(--dim); }
 
@@ -431,7 +433,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .site-nav { gap: .1em; font-size: .72rem; letter-spacing: .04em; }
   .site-nav a.textlink { padding: .8em .45em; }
   .nav-icon { width: 34px; height: 34px; }
-  .hero { padding: 44px 0 32px; }
+  .hero { padding-top: 44px; padding-bottom: 32px; }
   .card.featured { padding: 20px 22px; }
 }
 
