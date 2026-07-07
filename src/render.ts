@@ -39,10 +39,144 @@ const esc = (s: string) =>
 
 const fmtDate = (iso: string) => iso.slice(0, 10)
 
-// '2026-07' -> '2026年7月'
-const fmtMonth = (month: string) => {
+// ---- i18n ----
+export type Lang = 'ja' | 'en'
+
+const EN_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+// '2026-07' -> '2026年7月' (ja) / 'July 2026' (en)
+function fmtMonth(month: string, lang: Lang): string {
   const [y, m] = month.split('-')
-  return `${y}年${Number(m)}月`
+  return lang === 'en' ? `${EN_MONTHS[Number(m) - 1]} ${y}` : `${y}年${Number(m)}月`
+}
+
+// Path prefix for a language ('' for Japanese, '/en' for English)
+const basePath = (lang: Lang): string => (lang === 'en' ? '/en' : '')
+
+// Article field pickers: prefer the English column, fall back to Japanese
+const artTitle = (r: { title: string; title_en: string | null }, lang: Lang): string =>
+  lang === 'en' ? r.title_en || r.title : r.title
+const artSummary = (r: { summary: string; summary_en: string | null }, lang: Lang): string =>
+  lang === 'en' ? r.summary_en || r.summary : r.summary
+const artBody = (r: { body_md: string; body_md_en: string | null }, lang: Lang): string =>
+  lang === 'en' ? r.body_md_en || r.body_md : r.body_md
+
+const SITE_DESCRIPTION_EN =
+  'Daily, easy-to-read summaries of the latest AWS, Cloudflare, OpenAI and Anthropic news — by shiichan.'
+
+type Strings = {
+  htmlLang: string
+  desc: string
+  skip: string
+  heroH1: string
+  heroLede: string
+  latestPosts: string
+  popularWeek: [string, string]
+  about: string
+  aboutPanel: string
+  aboutGreeting: string
+  sources: string
+  tags: string
+  archive: string
+  viewAll: string
+  allTags: string
+  allMonths: string
+  more: string
+  searchTitle: string
+  searchPlaceholder: string
+  searchAria: string
+  searchPrompt: string
+  searchHint: string
+  searchNo: (q: string) => string
+  hits: (n: number, q: string) => string
+  tagsCount: (nTags: number, nPosts: number) => string
+  postsCount: (n: number) => string
+  monthsCount: (nMonths: number, nPosts: number) => string
+  source: string
+  notFoundBody: string
+  footerTag: string
+  footerRight: string
+  rssDesc: string
+}
+
+const T: Record<Lang, Strings> = {
+  ja: {
+    htmlLang: 'ja',
+    desc: SITE_DESCRIPTION,
+    skip: '本文へスキップ',
+    heroH1: 'テックニュースを、わかりやすく。',
+    heroLede:
+      'しぃちゃんが、AWS・Cloudflare・OpenAI・Anthropic の最新ニュースを毎日チェックして、やさしくまとめてお届けするよ。むずかしい発表も、これを読めばだいじょうぶ！',
+    latestPosts: 'Latest Posts',
+    popularWeek: ['Popular', 'this week'],
+    about: 'About',
+    aboutPanel:
+      'テックニュースが大好きな<b>しぃちゃん</b>が、毎日気になった発表をわかりやすく紹介するブログだよ。むずかしい話も、いっしょに読めばこわくない！',
+    aboutGreeting:
+      'やっほー、しぃちゃんだよ！毎日、AWS・Cloudflare・OpenAI・Anthropic といったテックの発表をチェックして、気になったニュースをわかりやすく紹介しているよ。',
+    sources: 'Sources',
+    tags: 'Tags',
+    archive: 'Archive',
+    viewAll: '全ての記事を見る',
+    allTags: 'ALL TAGS',
+    allMonths: 'ALL MONTHS',
+    more: 'MORE',
+    searchTitle: 'SEARCH',
+    searchPlaceholder: 'キーワードで検索',
+    searchAria: '記事を検索',
+    searchPrompt: 'TYPE KEYWORDS TO SEARCH',
+    searchHint: 'タイトル・本文からキーワードで探せるよ。スペース区切りで AND 検索になるからね。',
+    searchNo: (q) => `「${q}」に合う記事は見つからなかったよ。別のキーワードでも試してみてね。`,
+    hits: (n, q) => `${n} 件ヒット &mdash; 「${q}」`,
+    tagsCount: (nt, np) => `${nt} TAGS / ${np} POSTS`,
+    postsCount: (n) => `${n} 件`,
+    monthsCount: (nm, np) => `${nm} ヶ月 / ${np} 件`,
+    source: '原文',
+    notFoundBody: 'ごめんね、このページは見つからなかったよ。',
+    footerTag: 'shiichan blog — daily tech news, written by shiichan',
+    footerRight: '毎日更新',
+    rssDesc: SITE_DESCRIPTION,
+  },
+  en: {
+    htmlLang: 'en',
+    desc: SITE_DESCRIPTION_EN,
+    skip: 'Skip to content',
+    heroH1: 'Tech news, made simple.',
+    heroLede:
+      'shiichan checks the latest AWS, Cloudflare, OpenAI and Anthropic announcements every day and sums them up in plain language. Even the tricky ones — you’ve got this!',
+    latestPosts: 'Latest Posts',
+    popularWeek: ['Popular', 'this week'],
+    about: 'About',
+    aboutPanel:
+      '<b>shiichan</b> loves tech news and rounds up the announcements she finds interesting, in plain language, every day. Even the hard stuff is friendlier when we read it together!',
+    aboutGreeting:
+      'Hi, I’m shiichan! Every day I check tech announcements from AWS, Cloudflare, OpenAI and Anthropic, and write up the ones I find interesting in plain, easy-to-read English.',
+    sources: 'Sources',
+    tags: 'Tags',
+    archive: 'Archive',
+    viewAll: 'View all posts',
+    allTags: 'ALL TAGS',
+    allMonths: 'ALL MONTHS',
+    more: 'MORE',
+    searchTitle: 'SEARCH',
+    searchPlaceholder: 'Search by keyword',
+    searchAria: 'Search articles',
+    searchPrompt: 'TYPE KEYWORDS TO SEARCH',
+    searchHint: 'Search titles and body text. Space-separated terms are matched with AND.',
+    searchNo: (q) => `No articles matched “${q}”. Try a different keyword.`,
+    hits: (n, q) => `${n} HIT${n === 1 ? '' : 'S'} FOR &ldquo;${q}&rdquo;`,
+    tagsCount: (nt, np) => `${nt} TAGS / ${np} POSTS`,
+    postsCount: (n) => `${n} POST${n === 1 ? '' : 'S'}`,
+    monthsCount: (nm, np) => `${nm} MONTH${nm === 1 ? '' : 'S'} / ${np} POSTS`,
+    source: 'Source',
+    notFoundBody: 'Sorry, this page could not be found.',
+    footerTag: 'shiichan blog — daily tech news, written by shiichan',
+    footerRight: 'Daily updates',
+    rssDesc: SITE_DESCRIPTION_EN,
+  },
 }
 
 export function parseTags(json: string): string[] {
@@ -209,6 +343,16 @@ button { -webkit-tap-highlight-color: transparent; }
 .logo .dot { color: var(--accent); }
 .nav-right { display: flex; align-items: center; gap: .4em; }
 .nav-controls { display: flex; align-items: center; gap: .1em; }
+.lang-switch {
+  display: inline-flex; align-items: center; gap: .2em; margin-right: .2em;
+  font-family: var(--mono); font-size: .72rem; font-weight: 600;
+}
+.lang-switch a {
+  color: var(--muted); text-decoration: none; padding: .3em .45em; border-radius: 6px;
+  transition: color .15s ease, background .15s ease;
+}
+.lang-switch a:hover { color: var(--primary); background: var(--tag-bg); }
+.lang-switch a.on { color: var(--on-primary); background: var(--primary); }
 .site-nav { display: flex; align-items: center; gap: .3em; font-family: var(--sans); font-size: .9rem; }
 .site-nav a { color: var(--muted); text-decoration: none; font-weight: 500; }
 .site-nav a.textlink { padding: .6em .7em; border-radius: 8px; transition: color .15s ease, background .15s ease; }
@@ -681,18 +825,29 @@ type LayoutOpts = {
   canonicalPath?: string
   head?: string
   nav?: NavKey
+  lang: Lang
 }
 
-function navLink(href: string, label: string, key: NavKey, current?: NavKey): string {
+function navLink(base: string, path: string, label: string, key: NavKey, current?: NavKey): string {
   const active = key === current
-  return `<a class="textlink${active ? ' active' : ''}" href="${href}"${active ? ' aria-current="page"' : ''}>${label}</a>`
+  return `<a class="textlink${active ? ' active' : ''}" href="${base}${path}"${active ? ' aria-current="page"' : ''}>${label}</a>`
 }
 
 function layout(opts: LayoutOpts, main: string): string {
-  const description = opts.description ?? SITE_DESCRIPTION
-  const canonical = opts.canonicalPath ? `${SITE_ORIGIN}${opts.canonicalPath}` : undefined
+  const { lang } = opts
+  const t = T[lang]
+  const base = basePath(lang)
+  const description = opts.description ?? t.desc
+  const path = opts.canonicalPath ?? '/'
+  const canonical = `${SITE_ORIGIN}${base}${path}`
+  const jaUrl = `${SITE_ORIGIN}${path}`
+  const enUrl = `${SITE_ORIGIN}/en${path}`
+  const langSwitch = `<div class="lang-switch">
+        <a href="${path}"${lang === 'ja' ? ' class="on" aria-current="true"' : ''}>JA</a>
+        <a href="/en${path}"${lang === 'en' ? ' class="on" aria-current="true"' : ''}>EN</a>
+      </div>`
   return `<!doctype html>
-<html lang="ja">
+<html lang="${t.htmlLang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -701,11 +856,15 @@ function layout(opts: LayoutOpts, main: string): string {
 <meta property="og:title" content="${esc(opts.title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:site_name" content="${esc(SITE_TITLE)}">
-${canonical ? `<meta property="og:url" content="${esc(canonical)}">\n<link rel="canonical" href="${esc(canonical)}">` : ''}
+<meta property="og:url" content="${esc(canonical)}">
+<link rel="canonical" href="${esc(canonical)}">
+<link rel="alternate" hreflang="ja" href="${esc(jaUrl)}">
+<link rel="alternate" hreflang="en" href="${esc(enUrl)}">
+<link rel="alternate" hreflang="x-default" href="${esc(jaUrl)}">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F1B33">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F8FBFF">
 <link rel="icon" href="${FAVICON}">
-<link rel="alternate" type="application/rss+xml" title="${esc(SITE_TITLE)}" href="/feed.xml">
+<link rel="alternate" type="application/rss+xml" title="${esc(SITE_TITLE)}" href="${base}/feed.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
@@ -714,29 +873,30 @@ ${opts.head ?? ''}
 <style>${STYLE}</style>
 </head>
 <body>
-<a class="skip" href="#main">本文へスキップ</a>
+<a class="skip" href="#main">${esc(t.skip)}</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="/">${WAVE_MARK}shiichan<span class="logo-suffix"><span class="dot">.</span>blog</span></a>
+    <a class="logo" href="${base}/">${WAVE_MARK}shiichan<span class="logo-suffix"><span class="dot">.</span>blog</span></a>
     <div class="nav-right">
-      <nav class="site-nav" id="site-nav" aria-label="サイトナビゲーション">
-        ${navLink('/posts', 'Posts', 'posts', opts.nav)}
-        ${navLink('/tags', 'Tags', 'tags', opts.nav)}
-        ${navLink('/about', 'About', 'about', opts.nav)}
-        <a class="textlink menu-only" href="/search">Search</a>
-        <a class="textlink menu-only" href="/feed.xml">RSS</a>
-        <form class="header-search bar-only" action="/search" method="get" target="_blank" rel="noopener" role="search">
+      <nav class="site-nav" id="site-nav" aria-label="Site navigation">
+        ${navLink(base, '/posts', 'Posts', 'posts', opts.nav)}
+        ${navLink(base, '/tags', 'Tags', 'tags', opts.nav)}
+        ${navLink(base, '/about', 'About', 'about', opts.nav)}
+        <a class="textlink menu-only" href="${base}/search">Search</a>
+        <a class="textlink menu-only" href="${base}/feed.xml">RSS</a>
+        <form class="header-search bar-only" action="${base}/search" method="get" target="_blank" rel="noopener" role="search">
           ${icon('search')}
-          <input class="hs-input" type="search" name="q" placeholder="Search" aria-label="記事を検索" maxlength="100">
+          <input class="hs-input" type="search" name="q" placeholder="Search" aria-label="${esc(t.searchAria)}" maxlength="100">
           <kbd class="hs-kbd" aria-hidden="true">⌘K</kbd>
         </form>
-        <a class="nav-icon nav-rss bar-only" href="/feed.xml" aria-label="RSS フィード">${icon('rss')}</a>
+        <a class="nav-icon nav-rss bar-only" href="${base}/feed.xml" aria-label="RSS">${icon('rss')}</a>
       </nav>
       <div class="nav-controls">
-        <button class="nav-icon theme-toggle" id="theme-toggle" type="button" aria-label="ライト/ダークテーマ切り替え">
+        ${langSwitch}
+        <button class="nav-icon theme-toggle" id="theme-toggle" type="button" aria-label="Toggle light/dark theme">
           <span class="sun">${icon('sun')}</span><span class="moon">${icon('moon')}</span>
         </button>
-        <button class="nav-icon menu-toggle" id="menu-toggle" type="button" aria-label="メニュー" aria-controls="site-nav" aria-expanded="false">
+        <button class="nav-icon menu-toggle" id="menu-toggle" type="button" aria-label="Menu" aria-controls="site-nav" aria-expanded="false">
           <span class="i-menu">${icon('menu')}</span><span class="i-close">${icon('x')}</span>
         </button>
       </div>
@@ -749,7 +909,7 @@ ${main}
   <div class="footer-inner">
     <div class="wrap">
       <span class="fbrand">${WAVE_MARK}shiichan blog</span>
-      <span>毎日更新 / <a href="/search">Search</a> / <a href="/archive">Archive</a> / <a href="/feed.xml">RSS</a> <span class="jelly" aria-hidden="true">🪼</span></span>
+      <span>${esc(t.footerRight)} / <a href="${base}/search">Search</a> / <a href="${base}/archive">Archive</a> / <a href="${base}/feed.xml">RSS</a> <span class="jelly" aria-hidden="true">🪼</span></span>
     </div>
   </div>
 </footer>
@@ -758,9 +918,9 @@ ${main}
 </html>`
 }
 
-function tagChip(tag: string, count?: number, big = false): string {
+function tagChip(base: string, tag: string, count?: number, big = false): string {
   const n = count !== undefined ? `<span class="n">${count}</span>` : ''
-  return `<a class="tag${big ? ' big' : ''}" href="/tags/${encodeURIComponent(tag)}">#${esc(tag)}${n}</a>`
+  return `<a class="tag${big ? ' big' : ''}" href="${base}/tags/${encodeURIComponent(tag)}">#${esc(tag)}${n}</a>`
 }
 
 function sourceBadge(name: string): string {
@@ -781,9 +941,11 @@ const THUMB_WAVE = `<svg class="wave" viewBox="0 0 480 26" preserveAspectRatio="
 function articleCard(
   r: ArticleListRow,
   index: number,
+  lang: Lang,
   opts: { latest?: boolean; summaryHtml?: string } = {},
 ): string {
   const { latest = false, summaryHtml } = opts
+  const base = basePath(lang)
   const delay = Math.min(index * 45, 500)
   const brand = sourceBrand(r.source_name)
   // Thumbnail wash: blue-family gradient (per design system) with only a faint
@@ -798,7 +960,7 @@ function articleCard(
   </div>
   <div class="card-body">
     <span class="genre-tag" style="--brand:${brand}">${esc(r.source_name)}</span>
-    <h3><a href="/posts/${esc(r.slug)}">${esc(r.title)}</a></h3>
+    <h3><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></h3>
     <p class="card-meta">${esc(fmtDate(r.published_at))}</p>
     ${summary}
   </div>
@@ -810,20 +972,22 @@ function snippetHtml(snip: string): string {
   return esc(snip).replaceAll(SNIP_OPEN, '<mark>').replaceAll(SNIP_CLOSE, '</mark>')
 }
 
-function popularPanel(popular: ArticleListRow[]): string {
+function popularPanel(popular: ArticleListRow[], lang: Lang): string {
   if (popular.length === 0) return ''
+  const base = basePath(lang)
+  const [pop, week] = T[lang].popularWeek
   const items = popular
     .map(
       (r, i) => `<li>
       <span class="rank">${i + 1}</span>
-      <a href="/posts/${esc(r.slug)}">${esc(r.title)}</a>
+      <a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a>
       <span class="pop-meta">${sourceBadge(r.source_name)}</span>
     </li>`,
     )
     .join('\n    ')
   return `
 <div class="panel" style="animation-delay:80ms">
-  <h2 class="section-title">Popular <span class="pop-week">this week</span></h2>
+  <h2 class="section-title">${esc(pop)} <span class="pop-week">${esc(week)}</span></h2>
   <ol class="pop-list">
     ${items}
   </ol>
@@ -839,17 +1003,19 @@ type IndexData = {
   total: number
 }
 
-export function renderIndexPage(data: IndexData): string {
+export function renderIndexPage(data: IndexData, lang: Lang): string {
   const { latest: rows, popular, tags, sources, months, total } = data
+  const t = T[lang]
+  const base = basePath(lang)
 
   const hero = `
 <img class="hero-banner" src="/hero.webp" srcset="/hero-800.webp 800w, /hero-1200.webp 1200w, /hero.webp 1731w"
   sizes="100vw" width="1731" height="909"
-  alt="ノートパソコンで作業する、笑顔のしぃちゃん — Shiichan Tech Blog" fetchpriority="high" decoding="async">
+  alt="A smiling shiichan working at her laptop — Shiichan Tech Blog" fetchpriority="high" decoding="async">
 <section class="hero wrap">
   <div class="hero-copy">
-    <h1>テックニュースを、わかりやすく。</h1>
-    <p class="lede">しぃちゃんが、AWS・Cloudflare・OpenAI・Anthropic の最新ニュースを毎日チェックして、やさしくまとめてお届けするよ。むずかしい発表も、これを読めばだいじょうぶ！</p>
+    <h1>${esc(t.heroH1)}</h1>
+    <p class="lede">${esc(t.heroLede)}</p>
     <div class="stats">
       <span class="stat">ARTICLES<b>${total}</b></span>
       <span class="stat">SOURCES<b>${sources.length}</b></span>
@@ -861,122 +1027,137 @@ export function renderIndexPage(data: IndexData): string {
   // One uniform grid; the newest card carries a LATEST ribbon
   const mainCol = rows.length
     ? `
-<h2 class="section-title">Latest Posts</h2>
-<div class="card-grid">${rows.map((r, i) => articleCard(r, i, { latest: i === 0 })).join('\n')}</div>
-<p class="more-row"><a class="panel-more" href="/posts">全ての記事を見る ${icon('arrow-up-right')}</a></p>`
-    : '<p>まだ記事がありません。</p>'
+<h2 class="section-title">${esc(t.latestPosts)}</h2>
+<div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang, { latest: i === 0 })).join('\n')}</div>
+<p class="more-row"><a class="panel-more" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
+    : '<p>No articles yet.</p>'
 
   const sideCol = `
-${popularPanel(popular)}
+${popularPanel(popular, lang)}
 <div class="panel" id="tags" style="animation-delay:120ms">
-  <h2 class="section-title">Tags</h2>
-  <p class="tag-row">${tags.map((t) => tagChip(t.tag, t.count)).join('')}</p>
-  <a class="panel-more" href="/tags">ALL TAGS ${icon('arrow-up-right')}</a>
+  <h2 class="section-title">${esc(t.tags)}</h2>
+  <p class="tag-row">${tags.map((tg) => tagChip(base, tg.tag, tg.count)).join('')}</p>
+  <a class="panel-more" href="${base}/tags">${t.allTags} ${icon('arrow-up-right')}</a>
 </div>
 <div class="panel" style="animation-delay:200ms">
-  <h2 class="section-title">Sources</h2>
+  <h2 class="section-title">${esc(t.sources)}</h2>
   ${sourceList(sources)}
 </div>
 <div class="panel" style="animation-delay:240ms">
-  <h2 class="section-title">Archive</h2>
+  <h2 class="section-title">${esc(t.archive)}</h2>
   <ul class="src-list">
     ${months
       .slice(0, 12)
       .map(
         (m) =>
-          `<li><a href="/archive/${esc(m.month)}">${fmtMonth(m.month)}</a><span class="n">${m.count}</span></li>`,
+          `<li><a href="${base}/archive/${esc(m.month)}">${fmtMonth(m.month, lang)}</a><span class="n">${m.count}</span></li>`,
       )
       .join('\n    ')}
   </ul>
-  <a class="panel-more" href="/archive">ALL MONTHS ${icon('arrow-up-right')}</a>
+  <a class="panel-more" href="${base}/archive">${t.allMonths} ${icon('arrow-up-right')}</a>
 </div>
 <div class="panel" style="animation-delay:280ms">
-  <h2 class="section-title">About</h2>
-  <p class="about-text">テックニュースが大好きな<b>しぃちゃん</b>が、毎日気になった発表をわかりやすく紹介するブログだよ。むずかしい話も、いっしょに読めばこわくない！</p>
-  <a class="panel-more" href="/about">MORE ${icon('arrow-up-right')}</a>
+  <h2 class="section-title">${esc(t.about)}</h2>
+  <p class="about-text">${t.aboutPanel}</p>
+  <a class="panel-more" href="${base}/about">${t.more} ${icon('arrow-up-right')}</a>
 </div>`
 
   return layout(
-    { title: SITE_TITLE, canonicalPath: '/' },
+    { title: SITE_TITLE, canonicalPath: '/', lang },
     `${hero}\n<div class="wrap">${WAVE_DIVIDER}</div>\n<div class="cols wrap"><main id="main">${mainCol}</main><aside>${sideCol}</aside></div>`,
   )
 }
 
-export function renderAllPostsPage(rows: ArticleListRow[], total: number): string {
+export function renderAllPostsPage(rows: ArticleListRow[], total: number, lang: Lang): string {
+  const t = T[lang]
   const main = `
 <section class="page-head wrap">
   <h1>ALL POSTS</h1>
-  <p class="count">${total} POST${total === 1 ? '' : 'S'}</p>
+  <p class="count">${t.postsCount(total)}</p>
 </section>
 <section class="list-section wrap" id="main">
-  <div class="card-grid">${rows.map((r, i) => articleCard(r, i)).join('\n')}</div>
+  <div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
 </section>`
   return layout(
     {
       title: `Posts | ${SITE_TITLE}`,
-      description: `${SITE_TITLE} の全記事一覧`,
+      description: lang === 'en' ? 'All posts on shiichan blog' : `${SITE_TITLE} の全記事一覧`,
       canonicalPath: '/posts',
       nav: 'posts',
+      lang,
     },
     main,
   )
 }
 
-export function renderTagsIndexPage(tags: TagCount[], sources: SourceCount[]): string {
+export function renderTagsIndexPage(tags: TagCount[], sources: SourceCount[], lang: Lang): string {
+  const t = T[lang]
+  const base = basePath(lang)
   const totalArticles = sources.reduce((sum, s) => sum + s.count, 0)
   const maxCount = tags[0]?.count ?? 1
   const cloud = tags
-    .map((t) => {
-      const size = (0.75 + (t.count / maxCount) * 0.5).toFixed(2)
-      return `<a class="tag big" style="font-size:${size}rem" href="/tags/${encodeURIComponent(t.tag)}">#${esc(t.tag)}<span class="n">${t.count}</span></a>`
+    .map((tg) => {
+      const size = (0.75 + (tg.count / maxCount) * 0.5).toFixed(2)
+      return `<a class="tag big" style="font-size:${size}rem" href="${base}/tags/${encodeURIComponent(tg.tag)}">#${esc(tg.tag)}<span class="n">${tg.count}</span></a>`
     })
     .join('')
   const main = `
 <section class="page-head wrap">
   <h1>TAGS</h1>
-  <p class="count">${tags.length} TAGS / ${totalArticles} POSTS</p>
+  <p class="count">${t.tagsCount(tags.length, totalArticles)}</p>
 </section>
 <section class="list-section wrap" id="main">
   <div class="tag-cloud">${cloud}</div>
 </section>`
   return layout(
-    { title: `Tags | ${SITE_TITLE}`, description: 'タグ一覧', canonicalPath: '/tags', nav: 'tags' },
-    main,
-  )
-}
-
-export function renderTagPage(tag: string, rows: ArticleListRow[]): string {
-  const main = `
-<section class="page-head wrap">
-  <p><a class="backlink" href="/tags">${icon('arrow-left')}TAGS</a></p>
-  <h1>#${esc(tag)}</h1>
-  <p class="count">${rows.length} POST${rows.length === 1 ? '' : 'S'}</p>
-</section>
-<section class="list-section wrap" id="main">
-  <div class="card-grid">${rows.map((r, i) => articleCard(r, i)).join('\n')}</div>
-</section>`
-  return layout(
     {
-      title: `#${tag} | ${SITE_TITLE}`,
-      description: `タグ「${tag}」の記事一覧`,
-      canonicalPath: `/tags/${encodeURIComponent(tag)}`,
+      title: `Tags | ${SITE_TITLE}`,
+      description: lang === 'en' ? 'All tags' : 'タグ一覧',
+      canonicalPath: '/tags',
       nav: 'tags',
+      lang,
     },
     main,
   )
 }
 
-export function renderAboutPage(): string {
+export function renderTagPage(tag: string, rows: ArticleListRow[], lang: Lang): string {
+  const t = T[lang]
+  const base = basePath(lang)
+  const main = `
+<section class="page-head wrap">
+  <p><a class="backlink" href="${base}/tags">${icon('arrow-left')}TAGS</a></p>
+  <h1>#${esc(tag)}</h1>
+  <p class="count">${t.postsCount(rows.length)}</p>
+</section>
+<section class="list-section wrap" id="main">
+  <div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+</section>`
+  return layout(
+    {
+      title: `#${tag} | ${SITE_TITLE}`,
+      description: lang === 'en' ? `Articles tagged “${tag}”` : `タグ「${tag}」の記事一覧`,
+      canonicalPath: `/tags/${encodeURIComponent(tag)}`,
+      nav: 'tags',
+      lang,
+    },
+    main,
+  )
+}
+
+export function renderAboutPage(lang: Lang): string {
+  const t = T[lang]
+  const base = basePath(lang)
   const main = `
 <div class="article-wrap" id="main">
-  <p><a class="backlink" href="/">${icon('arrow-left')}INDEX</a></p>
+  <p><a class="backlink" href="${base}/">${icon('arrow-left')}INDEX</a></p>
   <article>
     <div class="about-hero">
       <img class="about-avatar" src="/shiichan.webp" width="512" height="512" decoding="async"
-        alt="笑顔で手を振るしぃちゃん">
+        alt="shiichan smiling and waving">
       <div class="about-intro">
         <h1 class="article-title">About me</h1>
-        <p>やっほー、しぃちゃんだよ！毎日、AWS や Cloudflare、OpenAI、Anthropic といったテックの発表をチェックして、気になったニュースをわかりやすく紹介しているよ。</p>
+        <p>${esc(t.aboutGreeting)}</p>
       </div>
     </div>
   </article>
@@ -984,64 +1165,67 @@ export function renderAboutPage(): string {
   return layout(
     {
       title: `About | ${SITE_TITLE}`,
-      description: `${SITE_TITLE} としぃちゃんの紹介`,
+      description: lang === 'en' ? 'About shiichan' : `${SITE_TITLE} としぃちゃんの紹介`,
       canonicalPath: '/about',
       nav: 'about',
+      lang,
       head: `<meta property="og:image" content="${SITE_ORIGIN}/shiichan.webp">`,
     },
     main,
   )
 }
 
-export function renderSearchPage(query: string, rows: SearchHit[]): string {
-  const count = query
-    ? `${rows.length} HIT${rows.length === 1 ? '' : 'S'} FOR &ldquo;${esc(query)}&rdquo;`
-    : 'TYPE KEYWORDS TO SEARCH'
+export function renderSearchPage(query: string, rows: SearchHit[], lang: Lang): string {
+  const t = T[lang]
+  const count = query ? t.hits(rows.length, esc(query)) : t.searchPrompt
   const results = !query
-    ? '<p class="search-hint">タイトル・本文からキーワードで探せるよ。スペース区切りで AND 検索になるからね。</p>'
+    ? `<p class="search-hint">${esc(t.searchHint)}</p>`
     : rows.length
       ? `<div class="card-grid">${rows
           .map((r, i) =>
-            articleCard(r, i, { summaryHtml: r.snip ? snippetHtml(r.snip) : undefined }),
+            articleCard(r, i, lang, { summaryHtml: r.snip ? snippetHtml(r.snip) : undefined }),
           )
           .join('\n')}</div>`
-      : `<p class="search-hint">「${esc(query)}」に合う記事は見つからなかったよ。別のキーワードでも試してみてね。</p>`
+      : `<p class="search-hint">${esc(t.searchNo(query))}</p>`
   const main = `
 <section class="page-head wrap">
   <h1>SEARCH</h1>
   <p class="count">${count}</p>
 </section>
 <section class="list-section wrap" id="main">
-  <form class="search-form" action="/search" method="get" role="search">
+  <form class="search-form" action="${basePath(lang)}/search" method="get" role="search">
     ${icon('search')}
-    <input class="hs-input" type="search" name="q" value="${esc(query)}" placeholder="キーワードで検索"
-      aria-label="記事を検索" maxlength="100" ${query ? '' : 'autofocus'}>
+    <input class="hs-input" type="search" name="q" value="${esc(query)}" placeholder="${esc(t.searchPlaceholder)}"
+      aria-label="${esc(t.searchAria)}" maxlength="100" ${query ? '' : 'autofocus'}>
     <button class="search-btn" type="submit">Search</button>
   </form>
   ${results}
 </section>`
   return layout(
     {
-      title: query ? `検索: ${query} | ${SITE_TITLE}` : `Search | ${SITE_TITLE}`,
-      description: '記事検索',
+      title: query ? `${query} | ${SITE_TITLE}` : `Search | ${SITE_TITLE}`,
+      description: lang === 'en' ? 'Search articles' : '記事検索',
       canonicalPath: '/search',
+      lang,
     },
     main,
   )
 }
 
-export function renderArchiveIndexPage(months: MonthCount[]): string {
+export function renderArchiveIndexPage(months: MonthCount[], lang: Lang): string {
+  const t = T[lang]
+  const base = basePath(lang)
   const total = months.reduce((sum, m) => sum + m.count, 0)
   const list = months
     .map(
       (m) =>
-        `<li><a href="/archive/${esc(m.month)}"><b class="m">${esc(m.month)}</b>${fmtMonth(m.month)}<span class="n">${m.count} POST${m.count === 1 ? '' : 'S'}</span></a></li>`,
+        `<li><a href="${base}/archive/${esc(m.month)}"><b class="m">${esc(m.month)}</b>${fmtMonth(m.month, lang)}<span class="n">${t.postsCount(m.count)}</span></a></li>`,
     )
     .join('\n')
   const main = `
 <section class="page-head wrap">
   <h1>ARCHIVE</h1>
-  <p class="count">${months.length} MONTH${months.length === 1 ? '' : 'S'} / ${total} POSTS</p>
+  <p class="count">${t.monthsCount(months.length, total)}</p>
 </section>
 <section class="list-section wrap" id="main">
   <ul class="month-list">${list}</ul>
@@ -1049,48 +1233,55 @@ export function renderArchiveIndexPage(months: MonthCount[]): string {
   return layout(
     {
       title: `Archive | ${SITE_TITLE}`,
-      description: '月別アーカイブ',
+      description: lang === 'en' ? 'Monthly archive' : '月別アーカイブ',
       canonicalPath: '/archive',
+      lang,
     },
     main,
   )
 }
 
-export function renderArchiveMonthPage(month: string, rows: ArticleListRow[]): string {
+export function renderArchiveMonthPage(month: string, rows: ArticleListRow[], lang: Lang): string {
+  const t = T[lang]
+  const base = basePath(lang)
   const main = `
 <section class="page-head wrap">
-  <p><a class="backlink" href="/archive">${icon('arrow-left')}ARCHIVE</a></p>
+  <p><a class="backlink" href="${base}/archive">${icon('arrow-left')}ARCHIVE</a></p>
   <h1>${esc(month)}</h1>
-  <p class="count">${fmtMonth(month)} / ${rows.length} POST${rows.length === 1 ? '' : 'S'}</p>
+  <p class="count">${fmtMonth(month, lang)} / ${t.postsCount(rows.length)}</p>
 </section>
 <section class="list-section wrap" id="main">
-  <div class="card-grid">${rows.map((r, i) => articleCard(r, i)).join('\n')}</div>
+  <div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
 </section>`
   return layout(
     {
-      title: `${fmtMonth(month)} | ${SITE_TITLE}`,
-      description: `${fmtMonth(month)}の記事一覧`,
+      title: `${fmtMonth(month, lang)} | ${SITE_TITLE}`,
+      description: lang === 'en' ? `Posts from ${fmtMonth(month, lang)}` : `${fmtMonth(month, lang)}の記事一覧`,
       canonicalPath: `/archive/${month}`,
+      lang,
     },
     main,
   )
 }
 
-export async function renderArticlePage(row: ArticleRow): Promise<string> {
+export async function renderArticlePage(row: ArticleRow, lang: Lang): Promise<string> {
+  const t = T[lang]
+  const base = basePath(lang)
+  const title = artTitle(row, lang)
   // body_md was validated HTML-free at ingest, so the only HTML here comes from marked
-  const bodyHtml = await marked.parse(row.body_md)
+  const bodyHtml = await marked.parse(artBody(row, lang))
   const tags = parseTags(row.tags)
-  const mdPath = `/posts/${row.slug}.md`
+  const mdPath = `${base}/posts/${row.slug}.md`
   const main = `
 <div class="article-wrap" id="main">
-  <p><a class="backlink" href="/">${icon('arrow-left')}INDEX</a></p>
+  <p><a class="backlink" href="${base}/">${icon('arrow-left')}INDEX</a></p>
   <article>
-    <h1 class="article-title">${esc(row.title)}</h1>
+    <h1 class="article-title">${esc(title)}</h1>
     <div class="article-meta">
       <p class="meta" style="margin:0">${sourceBadge(row.source_name)}<span>${esc(fmtDate(row.published_at))}</span></p>
-      ${tags.map((t) => tagChip(t)).join('')}
+      ${tags.map((tg) => tagChip(base, tg)).join('')}
       <span class="spacer"></span>
-      <a class="srclink" href="${esc(row.source_url)}" rel="noopener">原文${icon('arrow-up-right')}</a>
+      <a class="srclink" href="${esc(row.source_url)}" rel="noopener">${esc(t.source)}${icon('arrow-up-right')}</a>
       <a class="mdlink" href="${esc(mdPath)}">${icon('file-code')}RAW .md</a>
     </div>
     <div class="prose">${bodyHtml}</div>
@@ -1098,45 +1289,48 @@ export async function renderArticlePage(row: ArticleRow): Promise<string> {
 </div>`
   return layout(
     {
-      title: `${row.title} | ${SITE_TITLE}`,
-      description: row.summary,
+      title: `${title} | ${SITE_TITLE}`,
+      description: artSummary(row, lang),
       canonicalPath: `/posts/${row.slug}`,
       head: `<link rel="alternate" type="text/markdown" href="${esc(mdPath)}">`,
       nav: 'posts',
+      lang,
     },
     main,
   )
 }
 
-export function renderArticleMarkdown(row: ArticleRow): string {
+export function renderArticleMarkdown(row: ArticleRow, lang: Lang): string {
   const tags = parseTags(row.tags)
+  const title = artTitle(row, lang)
   return [
     '---',
-    `title: ${JSON.stringify(row.title)}`,
+    `title: ${JSON.stringify(title)}`,
     `source: ${JSON.stringify(row.source_name)}`,
     `source_url: ${row.source_url}`,
     `published_at: ${row.published_at}`,
     `tags: ${JSON.stringify(tags)}`,
     '---',
     '',
-    `# ${row.title}`,
+    `# ${title}`,
     '',
-    row.body_md.trim(),
+    artBody(row, lang).trim(),
     '',
   ].join('\n')
 }
 
-export function renderRssFeed(rows: ArticleListRow[]): string {
+export function renderRssFeed(rows: ArticleListRow[], lang: Lang): string {
+  const base = basePath(lang)
   const items = rows
     .map(
       (r) => `  <item>
-    <title>${esc(r.title)}</title>
-    <link>${SITE_ORIGIN}/posts/${esc(r.slug)}</link>
-    <guid isPermaLink="true">${SITE_ORIGIN}/posts/${esc(r.slug)}</guid>
-    <description>${esc(r.summary)}</description>
+    <title>${esc(artTitle(r, lang))}</title>
+    <link>${SITE_ORIGIN}${base}/posts/${esc(r.slug)}</link>
+    <guid isPermaLink="true">${SITE_ORIGIN}${base}/posts/${esc(r.slug)}</guid>
+    <description>${esc(artSummary(r, lang))}</description>
     <pubDate>${new Date(r.published_at).toUTCString()}</pubDate>
 ${parseTags(r.tags)
-  .map((t) => `    <category>${esc(t)}</category>`)
+  .map((tg) => `    <category>${esc(tg)}</category>`)
   .join('\n')}
   </item>`,
     )
@@ -1145,22 +1339,23 @@ ${parseTags(r.tags)
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
   <title>${esc(SITE_TITLE)}</title>
-  <link>${SITE_ORIGIN}/</link>
-  <atom:link href="${SITE_ORIGIN}/feed.xml" rel="self" type="application/rss+xml"/>
-  <description>${esc(SITE_DESCRIPTION)}</description>
-  <language>ja</language>
+  <link>${SITE_ORIGIN}${base}/</link>
+  <atom:link href="${SITE_ORIGIN}${base}/feed.xml" rel="self" type="application/rss+xml"/>
+  <description>${esc(T[lang].rssDesc)}</description>
+  <language>${T[lang].htmlLang}</language>
 ${rows[0] ? `  <lastBuildDate>${new Date(rows[0].published_at).toUTCString()}</lastBuildDate>\n` : ''}${items}
 </channel>
 </rss>`
 }
 
-export function renderNotFoundPage(): string {
+export function renderNotFoundPage(lang: Lang): string {
+  const base = basePath(lang)
   return layout(
-    { title: `404 | ${SITE_TITLE}` },
+    { title: `404 | ${SITE_TITLE}`, lang },
     `<div class="notfound wrap" id="main">
   <h1>404 // NOT FOUND</h1>
-  <p>ごめんね、このページは見つからなかったよ。</p>
-  <p><a class="backlink" href="/">${icon('arrow-left')}INDEX</a></p>
+  <p>${esc(T[lang].notFoundBody)}</p>
+  <p><a class="backlink" href="${base}/">${icon('arrow-left')}INDEX</a></p>
 </div>`,
   )
 }

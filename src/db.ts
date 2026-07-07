@@ -5,6 +5,9 @@ export type ArticleRow = {
   title: string
   summary: string
   body_md: string
+  title_en: string | null
+  summary_en: string | null
+  body_md_en: string | null
   source_url: string
   source_name: string
   tags: string
@@ -13,7 +16,14 @@ export type ArticleRow = {
 
 export type ArticleListRow = Pick<
   ArticleRow,
-  'slug' | 'title' | 'summary' | 'source_name' | 'tags' | 'published_at'
+  | 'slug'
+  | 'title'
+  | 'summary'
+  | 'title_en'
+  | 'summary_en'
+  | 'source_name'
+  | 'tags'
+  | 'published_at'
 >
 
 export type TagCount = { tag: string; count: number }
@@ -22,7 +32,8 @@ export type SourceCount = { source_name: string; count: number }
 
 export type MonthCount = { month: string; count: number }
 
-const LIST_COLUMNS = 'slug, title, summary, source_name, tags, published_at'
+const LIST_COLUMNS =
+  'slug, title, summary, title_en, summary_en, source_name, tags, published_at'
 
 export async function listArticles(db: D1Database, limit = 100): Promise<ArticleListRow[]> {
   const { results } = await db
@@ -176,6 +187,30 @@ async function searchArticlesLike(
   return results
 }
 
+// English search: LIKE over the English fields (falling back to Japanese where
+// a translation is missing). No FTS/snippets on the English side yet.
+export async function searchArticlesEn(
+  db: D1Database,
+  query: string,
+  limit = 50,
+): Promise<SearchHit[]> {
+  const terms = splitTerms(query)
+    .map((t) => t.replace(/[\\%_]/g, (c) => `\\${c}`))
+    .slice(0, 5)
+  if (terms.length === 0) return []
+  const field =
+    "(COALESCE(title_en, title) || ' ' || COALESCE(summary_en, summary) || ' ' || COALESCE(body_md_en, body_md))"
+  const where = terms.map((_, i) => `${field} LIKE ?${i + 1} ESCAPE '\\'`).join(' AND ')
+  const { results } = await db
+    .prepare(
+      `SELECT ${LIST_COLUMNS}, NULL AS snip FROM articles
+       WHERE ${where} ORDER BY published_at DESC LIMIT ${limit}`,
+    )
+    .bind(...terms.map((t) => `%${t}%`))
+    .all<SearchHit>()
+  return results
+}
+
 export async function listMonths(db: D1Database): Promise<MonthCount[]> {
   const { results } = await db
     .prepare(
@@ -209,17 +244,24 @@ export async function getArticle(db: D1Database, slug: string): Promise<ArticleR
 export async function upsertArticle(db: D1Database, a: Article): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO articles (slug, title, summary, body_md, source_url, source_name, tags, published_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+      `INSERT INTO articles
+         (slug, title, summary, body_md, title_en, summary_en, body_md_en,
+          source_url, source_name, tags, published_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
        ON CONFLICT (slug) DO UPDATE SET
-         title = ?2, summary = ?3, body_md = ?4, source_url = ?5,
-         source_name = ?6, tags = ?7, published_at = ?8, updated_at = datetime('now')`,
+         title = ?2, summary = ?3, body_md = ?4,
+         title_en = ?5, summary_en = ?6, body_md_en = ?7,
+         source_url = ?8, source_name = ?9, tags = ?10, published_at = ?11,
+         updated_at = datetime('now')`,
     )
     .bind(
       a.slug,
       a.title,
       a.summary,
       a.body_md,
+      a.title_en ?? null,
+      a.summary_en ?? null,
+      a.body_md_en ?? null,
       a.source_url,
       a.source_name,
       JSON.stringify(a.tags),

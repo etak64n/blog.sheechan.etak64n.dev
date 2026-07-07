@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import type { Context } from 'hono'
 import { verifyIngestAuth } from './auth'
 import {
   countArticles,
@@ -13,6 +14,7 @@ import {
   listTags,
   recordView,
   searchArticles,
+  searchArticlesEn,
   upsertArticle,
 } from './db'
 import {
@@ -60,11 +62,13 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-// ---- public pages ----
+// ---- public pages (registered for both '' (ja) and '/en' (en)) ----
 
 const HOME_LATEST = 20
+type Lang = 'ja' | 'en'
+type Ctx = Context<{ Bindings: Env }>
 
-app.get('/', async (c) => {
+async function home(c: Ctx, lang: Lang) {
   const [latest, popular, tags, sources, months, total] = await Promise.all([
     listArticles(c.env.DB, HOME_LATEST),
     listPopular(c.env.DB, 5),
@@ -74,43 +78,44 @@ app.get('/', async (c) => {
     countArticles(c.env.DB),
   ])
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderIndexPage({ latest, popular, tags, sources, months, total }))
-})
+  return c.html(renderIndexPage({ latest, popular, tags, sources, months, total }, lang))
+}
 
-app.get('/posts', async (c) => {
-  const [articles, total] = await Promise.all([
-    listArticles(c.env.DB, 1000),
-    countArticles(c.env.DB),
-  ])
+async function posts(c: Ctx, lang: Lang) {
+  const [articles, total] = await Promise.all([listArticles(c.env.DB, 1000), countArticles(c.env.DB)])
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderAllPostsPage(articles, total))
-})
+  return c.html(renderAllPostsPage(articles, total, lang))
+}
 
-app.get('/search', async (c) => {
+async function search(c: Ctx, lang: Lang) {
   const query = (c.req.query('q') ?? '').trim().slice(0, 100)
-  const results = query ? await searchArticles(c.env.DB, query) : []
+  const results = query
+    ? lang === 'en'
+      ? await searchArticlesEn(c.env.DB, query)
+      : await searchArticles(c.env.DB, query)
+    : []
   c.header('cache-control', 'public, max-age=60')
-  return c.html(renderSearchPage(query, results))
-})
+  return c.html(renderSearchPage(query, results, lang))
+}
 
-app.get('/archive', async (c) => {
+async function archive(c: Ctx, lang: Lang) {
   const months = await listMonths(c.env.DB)
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderArchiveIndexPage(months))
-})
+  return c.html(renderArchiveIndexPage(months, lang))
+}
 
-app.get('/archive/:month', async (c) => {
-  const month = c.req.param('month')
+async function archiveMonth(c: Ctx, lang: Lang) {
+  const month = c.req.param('month') ?? ''
   if (!/^\d{4}-\d{2}$/.test(month)) return c.notFound()
   const articles = await listArticlesByMonth(c.env.DB, month)
   if (articles.length === 0) return c.notFound()
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderArchiveMonthPage(month, articles))
-})
+  return c.html(renderArchiveMonthPage(month, articles, lang))
+}
 
 // `/posts/<slug>.md` serves the raw markdown (slugs themselves never contain dots)
-app.get('/posts/:slug', async (c) => {
-  const param = c.req.param('slug')
+async function post(c: Ctx, lang: Lang) {
+  const param = c.req.param('slug') ?? ''
   const wantsMarkdown = param.endsWith('.md')
   const slug = wantsMarkdown ? param.slice(0, -'.md'.length) : param
 
@@ -120,37 +125,56 @@ app.get('/posts/:slug', async (c) => {
 
   if (wantsMarkdown) {
     c.header('content-type', 'text/markdown; charset=utf-8')
-    return c.body(renderArticleMarkdown(article))
+    return c.body(renderArticleMarkdown(article, lang))
   }
   // Tally the view without delaying the response; popularity is best-effort
   c.executionCtx.waitUntil(recordView(c.env.DB, slug).catch(() => {}))
-  return c.html(await renderArticlePage(article))
-})
+  return c.html(await renderArticlePage(article, lang))
+}
 
-app.get('/tags', async (c) => {
-  const [tags, sources] = await Promise.all([listTags(c.env.DB), listSources(c.env.DB)])
+async function tags(c: Ctx, lang: Lang) {
+  const [tagList, sources] = await Promise.all([listTags(c.env.DB), listSources(c.env.DB)])
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderTagsIndexPage(tags, sources))
-})
+  return c.html(renderTagsIndexPage(tagList, sources, lang))
+}
 
-app.get('/tags/:tag', async (c) => {
-  const articles = await listArticlesByTag(c.env.DB, c.req.param('tag'))
+async function tag(c: Ctx, lang: Lang) {
+  const tagName = c.req.param('tag') ?? ''
+  const articles = await listArticlesByTag(c.env.DB, tagName)
   if (articles.length === 0) return c.notFound()
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderTagPage(c.req.param('tag'), articles))
-})
+  return c.html(renderTagPage(tagName, articles, lang))
+}
 
-app.get('/about', (c) => {
+function about(c: Ctx, lang: Lang) {
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderAboutPage())
-})
+  return c.html(renderAboutPage(lang))
+}
 
-app.get('/feed.xml', async (c) => {
+async function feed(c: Ctx, lang: Lang) {
   const articles = await listArticles(c.env.DB, 30)
   c.header('cache-control', 'public, max-age=900')
   c.header('content-type', 'application/rss+xml; charset=utf-8')
-  return c.body(renderRssFeed(articles))
-})
+  return c.body(renderRssFeed(articles, lang))
+}
+
+for (const [base, lang] of [
+  ['', 'ja'],
+  ['/en', 'en'],
+] as [string, Lang][]) {
+  app.get(base || '/', (c) => home(c, lang))
+  app.get(`${base}/posts`, (c) => posts(c, lang))
+  app.get(`${base}/posts/:slug`, (c) => post(c, lang))
+  app.get(`${base}/search`, (c) => search(c, lang))
+  app.get(`${base}/archive`, (c) => archive(c, lang))
+  app.get(`${base}/archive/:month`, (c) => archiveMonth(c, lang))
+  app.get(`${base}/tags`, (c) => tags(c, lang))
+  app.get(`${base}/tags/:tag`, (c) => tag(c, lang))
+  app.get(`${base}/about`, (c) => about(c, lang))
+  app.get(`${base}/feed.xml`, (c) => feed(c, lang))
+}
+// Accept /en/ with a trailing slash as the English home
+app.get('/en/', (c) => home(c, 'en'))
 
 // ---- ingest API (GitHub Actions OIDC) ----
 
@@ -190,7 +214,8 @@ app.delete('/api/articles/:slug', async (c) => {
 
 app.notFound((c) => {
   if (c.req.path.startsWith('/api/')) return c.json({ error: 'not found' }, 404)
-  return c.html(renderNotFoundPage(), 404)
+  const lang: Lang = c.req.path === '/en' || c.req.path.startsWith('/en/') ? 'en' : 'ja'
+  return c.html(renderNotFoundPage(lang), 404)
 })
 
 app.onError((err, c) => {

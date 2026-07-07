@@ -18,6 +18,13 @@ const cleanText = (max: number) =>
     .refine(noRawHtml, mdRefine('raw HTML not allowed'))
     .refine(safeMarkdownUrls, mdRefine('unsafe link scheme not allowed'))
 
+const cleanBody = z
+  .string()
+  .min(100)
+  .max(64_000)
+  .refine(noRawHtml, mdRefine('raw HTML not allowed'))
+  .refine(safeMarkdownUrls, mdRefine('unsafe link scheme not allowed'))
+
 export const articleSchema = z.object({
   slug: z
     .string()
@@ -25,12 +32,12 @@ export const articleSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   title: z.string().min(1).max(300),
   summary: cleanText(1000),
-  body_md: z
-    .string()
-    .min(100)
-    .max(64_000)
-    .refine(noRawHtml, mdRefine('raw HTML not allowed'))
-    .refine(safeMarkdownUrls, mdRefine('unsafe link scheme not allowed')),
+  body_md: cleanBody,
+  // Optional English translation (same safety checks). Present once the
+  // article has been translated; the site falls back to Japanese otherwise.
+  title_en: z.string().min(1).max(300).optional(),
+  summary_en: cleanText(1000).optional(),
+  body_md_en: cleanBody.optional(),
   // Host allowlist is checked in the handler (list lives in wrangler.jsonc vars)
   source_url: z.url(),
   // Not an enum: sources will grow over time (watcher's sources.json is the source of truth)
