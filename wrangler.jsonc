@@ -29,6 +29,7 @@
     "ALLOWED_SOURCE_HOSTS": [
       "aws.amazon.com",
       "blog.cloudflare.com",
+      "developers.cloudflare.com",
       "openai.com",
       "www.anthropic.com",
       "anthropic.com"
