@@ -422,13 +422,16 @@ button { -webkit-tap-highlight-color: transparent; }
   font-size: clamp(1.6rem, 4.2vw, 2.4rem); line-height: 1.3; margin: 0 0 .2em; text-wrap: balance;
 }
 .hero-copy .lede { color: var(--muted); margin: 0 0 1.1em; }
-.stats { display: flex; flex-wrap: wrap; gap: 10px; }
-.stat {
-  font-family: var(--mono); font-size: .74rem; letter-spacing: .04em;
-  border: 1px solid var(--line-strong); border-radius: 999px;
-  padding: .38em 1em; color: var(--muted); background: var(--surface);
+/* Tags, sorted by count, in a single horizontally-scrollable row */
+.hero-tags {
+  display: flex; flex-wrap: nowrap; gap: 8px;
+  overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
 }
-.stat b { color: var(--primary); font-weight: 700; margin-left: .5em; }
+.hero-tags::-webkit-scrollbar { height: 6px; }
+.hero-tags::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+.hero-tags::-webkit-scrollbar-track { background: transparent; }
+.hero-tags .tag { flex: none; }
 
 /* ---- wave divider ---- */
 .wave-divider { color: var(--accent); margin: 30px 0 4px; }
@@ -1020,11 +1023,7 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
   <div class="hero-copy">
     <h1>${esc(t.heroH1)}</h1>
     <p class="lede">${esc(t.heroLede)}</p>
-    <div class="stats">
-      <span class="stat">ARTICLES<b>${total}</b></span>
-      <span class="stat">SOURCES<b>${sources.length}</b></span>
-      <span class="stat">UPDATE<b>DAILY</b></span>
-    </div>
+    <div class="hero-tags">${tags.map((tg) => tagChip(base, tg.tag, tg.count)).join('')}</div>
   </div>
 </section>`
 
