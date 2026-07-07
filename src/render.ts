@@ -200,7 +200,7 @@ function sourceColor(name: string): string {
   if (n.includes('aws') || n.includes('amazon')) return '#ff9900'
   if (n.includes('cloudflare')) return '#f6821f'
   if (n.includes('openai')) return '#4ecb9b'
-  if (n.includes('anthropic')) return '#d97757'
+  if (n.includes('anthropic') || n.includes('claude')) return '#d97757'
   if (n.includes('windows') || n.includes('microsoft')) return '#4cc2ff'
   return '#60B5FA'
 }
@@ -212,7 +212,7 @@ function sourceBrand(name: string): string {
   if (n.includes('aws') || n.includes('amazon')) return '#C77A00'
   if (n.includes('cloudflare')) return '#C25E12'
   if (n.includes('openai')) return '#1A9C78'
-  if (n.includes('anthropic')) return '#B4653F'
+  if (n.includes('anthropic') || n.includes('claude')) return '#B4653F'
   if (n.includes('windows') || n.includes('microsoft')) return '#2B7DC4'
   return '#2E6FD0'
 }

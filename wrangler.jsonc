@@ -29,7 +29,7 @@
     "OIDC_AUDIENCE": "https://blog.shiichan.etak64n.dev",
     "ALLOWED_OIDC_SUB": "repo:etak64n/shiichan-reporter:ref:refs/heads/main",
     // Domains allowed in source_url. When adding a site to the watcher's
-    // sources.json, add its domain here and deploy (defense in depth against
+    // sources/*.json, add its domain here and deploy (defense in depth against
     // arbitrary-link injection if auth were ever bypassed)
     "ALLOWED_SOURCE_HOSTS": [
       "aws.amazon.com",
@@ -39,6 +39,7 @@
       "openai.com",
       "www.anthropic.com",
       "anthropic.com",
+      "claude.com",
       "jpwinsup.github.io"
     ],
     // Local development only. Keep empty in production (empty = disabled).
