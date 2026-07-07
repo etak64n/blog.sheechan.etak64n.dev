@@ -59,6 +59,14 @@ function fmtMonth(month: string, lang: Lang): string {
   return lang === 'en' ? `${EN_MONTHS[Number(m) - 1]} ${y}` : `${y}年${Number(m)}月`
 }
 
+// '2026-07-07' -> '2026年7月7日' (ja) / 'July 7, 2026' (en)
+function fmtFullDate(date: string, lang: Lang): string {
+  const [y, m, d] = date.split('-')
+  return lang === 'en'
+    ? `${EN_MONTHS[Number(m) - 1]} ${Number(d)}, ${y}`
+    : `${y}年${Number(m)}月${Number(d)}日`
+}
+
 // Path prefix for a language ('' for Japanese, '/en' for English)
 const basePath = (lang: Lang): string => (lang === 'en' ? '/en' : '')
 
@@ -109,6 +117,7 @@ type Strings = {
   prev: string
   next: string
   toc: string
+  related: string
 }
 
 const T: Record<Lang, Strings> = {
@@ -151,6 +160,7 @@ const T: Record<Lang, Strings> = {
     prev: '前へ',
     next: '次へ',
     toc: '目次',
+    related: '関連記事',
   },
   en: {
     htmlLang: 'en',
@@ -191,6 +201,7 @@ const T: Record<Lang, Strings> = {
     prev: 'Prev',
     next: 'Next',
     toc: 'Contents',
+    related: 'Related posts',
   },
 }
 
@@ -323,6 +334,9 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   overflow-x: clip;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   font-family: var(--sans);
   color: var(--text);
   line-height: 1.8;
@@ -466,6 +480,8 @@ button { -webkit-tap-highlight-color: transparent; }
   -webkit-mask: var(--wave-mask) center / contain no-repeat; mask: var(--wave-mask) center / contain no-repeat;
 }
 .section-title:first-child { margin-top: 0; }
+.day-link { color: inherit; text-decoration: none; transition: color .15s ease; }
+.day-link:hover { color: var(--primary); }
 
 /* ---- cards (thumbnail + genre tag + title + meta, per design-system) ---- */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 18px; }
@@ -647,8 +663,17 @@ button { -webkit-tap-highlight-color: transparent; }
   display: grid; grid-template-columns: 210px minmax(0, 760px);
   gap: 44px; justify-content: center; align-items: start;
 }
-.article-main { min-width: 0; }
-.article-layout:not(.has-toc) .article-main { max-width: 760px; margin: 0 auto; }
+.article-col { min-width: 0; }
+.article-layout:not(.has-toc) .article-col { max-width: 760px; margin: 0 auto; }
+.article-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  padding: 28px 32px 44px; box-shadow: var(--shadow-soft); margin-top: .4em;
+}
+.related { margin-top: 44px; }
+.related .section-title { margin-top: 0; }
+@media (max-width: 560px) {
+  .article-card { padding: 20px 20px 32px; border-radius: 14px; }
+}
 .toc { position: sticky; top: 76px; align-self: start; }
 .toc-title {
   font-family: var(--display); font-weight: 700; font-size: .82rem;
@@ -678,7 +703,7 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 960px) {
   .article-layout.has-toc { display: block; }
   .toc { display: none; }
-  .article-main { max-width: 760px; margin: 0 auto; }
+  .article-col { max-width: 760px; margin: 0 auto; }
 }
 
 .prose { font-size: 1rem; }
@@ -757,7 +782,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .notfound p { color: var(--muted); }
 
 /* ---- footer ---- */
-.site-footer { margin-top: 20px; }
+.site-footer { margin-top: auto; }
 .footer-wave { display: block; width: 100%; height: 16px; color: var(--navy); }
 .footer-inner { background: var(--navy); color: #EAF3FE; padding: 26px 0 38px; }
 .footer-inner .wrap {
@@ -1093,8 +1118,10 @@ function popularPanel(popular: ArticleListRow[], lang: Lang): string {
 </div>`
 }
 
+type DayGroup = { date: string; articles: ArticleListRow[]; hasMore: boolean }
+
 type IndexData = {
-  latest: ArticleListRow[]
+  days: DayGroup[]
   popular: ArticleListRow[]
   tags: TagCount[]
   sources: SourceCount[]
@@ -1103,7 +1130,7 @@ type IndexData = {
 }
 
 export function renderIndexPage(data: IndexData, lang: Lang): string {
-  const { latest: rows, popular, tags, sources, months, total } = data
+  const { days, popular, tags, sources, months, total } = data
   const t = T[lang]
   const base = basePath(lang)
 
@@ -1119,11 +1146,17 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
   </div>
 </section>`
 
-  // One uniform grid; the newest card carries a LATEST ribbon
-  const mainCol = rows.length
-    ? `
-<h2 class="section-title">${esc(t.latestPosts)}</h2>
-<div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang, { latest: i === 0 })).join('\n')}</div>
+  // Recent days, each showing up to 4 posts with a "more" link to that day's
+  // page; the newest post overall carries a LATEST ribbon
+  const mainCol = days.length
+    ? `${days
+        .map(
+          (g, gi) => `
+<h2 class="section-title"><a class="day-link" href="${base}/day/${g.date}">${fmtFullDate(g.date, lang)}</a></h2>
+<div class="card-grid">${g.articles.map((r, i) => articleCard(r, i, lang, { latest: gi === 0 && i === 0 })).join('\n')}</div>
+${g.hasMore ? `<p class="more-row"><a class="panel-more" href="${base}/day/${g.date}">${t.more} ${icon('arrow-up-right')}</a></p>` : ''}`,
+        )
+        .join('\n')}
 <p class="more-row"><a class="panel-more" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
     : '<p>No articles yet.</p>'
 
@@ -1383,7 +1416,33 @@ export function renderArchiveMonthPage(month: string, rows: ArticleListRow[], la
   )
 }
 
-export async function renderArticlePage(row: ArticleRow, lang: Lang): Promise<string> {
+export function renderDayPage(date: string, rows: ArticleListRow[], lang: Lang): string {
+  const t = T[lang]
+  const label = fmtFullDate(date, lang)
+  const main = `
+<section class="page-head wrap">
+  <h1>${esc(label)}</h1>
+  <p class="count">${t.postsCount(rows.length)}</p>
+</section>
+<section class="list-section wrap" id="main">
+  <div class="card-grid">${rows.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+</section>`
+  return layout(
+    {
+      title: `${label} | ${SITE_TITLE}`,
+      description: lang === 'en' ? `Posts from ${label}` : `${label}の記事一覧`,
+      canonicalPath: `/day/${date}`,
+      lang,
+    },
+    main,
+  )
+}
+
+export async function renderArticlePage(
+  row: ArticleRow,
+  related: ArticleListRow[],
+  lang: Lang,
+): Promise<string> {
   const t = T[lang]
   const base = basePath(lang)
   const title = artTitle(row, lang)
@@ -1425,25 +1484,35 @@ export async function renderArticlePage(row: ArticleRow, lang: Lang): Promise<st
 </aside>`
       : ''
 
+  const relatedSection = related.length
+    ? `
+<section class="related">
+  <h2 class="section-title">${esc(t.related)}</h2>
+  <div class="card-grid">${related.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+</section>`
+    : ''
+
   const main = `
 <div class="article-layout wrap${toc.length >= 2 ? ' has-toc' : ''}">
   ${tocAside}
-  <article class="article-main" id="main">
-    <p><a class="backlink" href="${base}/">${icon('arrow-left')}INDEX</a></p>
-    <div class="article-hero" style="${heroStyle}" aria-hidden="true">
-      <span class="article-hero-src" style="--brand:${brand}">${esc(row.source_name)}</span>
-      ${THUMB_WAVE}
-    </div>
-    <h1 class="article-title">${esc(title)}</h1>
-    <div class="article-meta">
-      <p class="meta" style="margin:0">${sourceBadge(row.source_name)}<span>${esc(fmtDate(row.published_at))}</span></p>
-      <span class="spacer"></span>
-      <a class="srclink" href="${esc(row.source_url)}" rel="noopener">${esc(t.source)}${icon('arrow-up-right')}</a>
-      <a class="mdlink" href="${esc(mdPath)}">${icon('file-code')}RAW .md</a>
-    </div>
-    ${tags.length ? `<div class="article-tags">${tags.map((tg) => tagChip(base, tg)).join('')}</div>` : ''}
-    <div class="prose">${bodyHtml}</div>
-  </article>
+  <div class="article-col" id="main">
+    <article class="article-card">
+      <div class="article-hero" style="${heroStyle}" aria-hidden="true">
+        <span class="article-hero-src" style="--brand:${brand}">${esc(row.source_name)}</span>
+        ${THUMB_WAVE}
+      </div>
+      <h1 class="article-title">${esc(title)}</h1>
+      <div class="article-meta">
+        <p class="meta" style="margin:0">${sourceBadge(row.source_name)}<span>${esc(fmtDate(row.published_at))}</span></p>
+        <span class="spacer"></span>
+        <a class="srclink" href="${esc(row.source_url)}" rel="noopener">${esc(t.source)}${icon('arrow-up-right')}</a>
+        <a class="mdlink" href="${esc(mdPath)}">${icon('file-code')}RAW .md</a>
+      </div>
+      ${tags.length ? `<div class="article-tags">${tags.map((tg) => tagChip(base, tg)).join('')}</div>` : ''}
+      <div class="prose">${bodyHtml}</div>
+    </article>
+    ${relatedSection}
+  </div>
 </div>`
   return layout(
     {
@@ -1459,22 +1528,7 @@ export async function renderArticlePage(row: ArticleRow, lang: Lang): Promise<st
 }
 
 export function renderArticleMarkdown(row: ArticleRow, lang: Lang): string {
-  const tags = parseTags(row.tags)
-  const title = artTitle(row, lang)
-  return [
-    '---',
-    `title: ${JSON.stringify(title)}`,
-    `source: ${JSON.stringify(row.source_name)}`,
-    `source_url: ${row.source_url}`,
-    `published_at: ${row.published_at}`,
-    `tags: ${JSON.stringify(tags)}`,
-    '---',
-    '',
-    `# ${title}`,
-    '',
-    artBody(row, lang).trim(),
-    '',
-  ].join('\n')
+  return `# ${artTitle(row, lang)}\n\n${artBody(row, lang).trim()}\n`
 }
 
 export function renderRssFeed(rows: ArticleListRow[], lang: Lang): string {

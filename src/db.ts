@@ -223,6 +223,35 @@ export async function searchArticlesEn(
   return results
 }
 
+// The N most recent distinct publication dates (YYYY-MM-DD), newest first
+export async function listRecentDays(db: D1Database, n = 3): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT DISTINCT substr(published_at, 1, 10) AS day
+       FROM articles ORDER BY day DESC LIMIT ?`,
+    )
+    .bind(n)
+    .all<{ day: string }>()
+  return results.map((r) => r.day)
+}
+
+export async function listArticlesByDay(
+  db: D1Database,
+  date: string,
+  limit?: number,
+): Promise<ArticleListRow[]> {
+  const lim = limit ? `LIMIT ${Math.max(0, Math.floor(limit))}` : ''
+  const { results } = await db
+    .prepare(
+      `SELECT ${LIST_COLUMNS} FROM articles
+       WHERE substr(published_at, 1, 10) = ?1
+       ORDER BY published_at DESC ${lim}`,
+    )
+    .bind(date)
+    .all<ArticleListRow>()
+  return results
+}
+
 export async function listMonths(db: D1Database): Promise<MonthCount[]> {
   const { results } = await db
     .prepare(
@@ -251,6 +280,58 @@ export async function listArticlesByMonth(
 
 export async function getArticle(db: D1Database, slug: string): Promise<ArticleRow | null> {
   return db.prepare('SELECT * FROM articles WHERE slug = ?').bind(slug).first<ArticleRow>()
+}
+
+// Related articles: most tag overlap first, then recency. Falls back to recent
+// articles (excluding self) when there aren't enough tag matches.
+export async function listRelated(
+  db: D1Database,
+  slug: string,
+  tags: string[],
+  limit = 4,
+): Promise<ArticleListRow[]> {
+  const cols = LIST_COLUMNS.split(', ')
+    .map((c) => `a.${c}`)
+    .join(', ')
+  const related: ArticleListRow[] = []
+  const seen = new Set<string>([slug])
+
+  if (tags.length > 0) {
+    const placeholders = tags.map((_, i) => `?${i + 2}`).join(', ')
+    const { results } = await db
+      .prepare(
+        `SELECT ${cols}, COUNT(*) AS shared
+         FROM articles a, json_each(a.tags) AS je
+         WHERE a.slug != ?1 AND je.value IN (${placeholders})
+         GROUP BY a.slug
+         ORDER BY shared DESC, a.published_at DESC
+         LIMIT ${limit}`,
+      )
+      .bind(slug, ...tags)
+      .all<ArticleListRow>()
+    for (const r of results) {
+      related.push(r)
+      seen.add(r.slug)
+    }
+  }
+
+  if (related.length < limit) {
+    const { results } = await db
+      .prepare(
+        `SELECT ${LIST_COLUMNS} FROM articles
+         WHERE slug != ?1 ORDER BY published_at DESC LIMIT ${limit + 1}`,
+      )
+      .bind(slug)
+      .all<ArticleListRow>()
+    for (const r of results) {
+      if (related.length >= limit) break
+      if (!seen.has(r.slug)) {
+        related.push(r)
+        seen.add(r.slug)
+      }
+    }
+  }
+  return related
 }
 
 export async function upsertArticle(db: D1Database, a: Article): Promise<void> {

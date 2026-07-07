@@ -6,11 +6,14 @@ import {
   deleteArticle,
   getArticle,
   listArticles,
+  listArticlesByDay,
   listArticlesByMonth,
   listArticlesByTag,
   listArticlesPage,
   listMonths,
+  listRecentDays,
   listPopular,
+  listRelated,
   listSources,
   listTags,
   recordView,
@@ -20,11 +23,13 @@ import {
 } from './db'
 import {
   contentSecurityPolicy,
+  parseTags,
   renderAboutPage,
   renderAllPostsPage,
   renderArchiveIndexPage,
   renderArchiveMonthPage,
   renderArticleMarkdown,
+  renderDayPage,
   renderArticlePage,
   renderIndexPage,
   renderNotFoundPage,
@@ -65,21 +70,38 @@ app.use('*', async (c, next) => {
 
 // ---- public pages (registered for both '' (ja) and '/en' (en)) ----
 
-const HOME_LATEST = 20
+const HOME_DAYS = 3
+const HOME_PER_DAY = 4
 type Lang = 'ja' | 'en'
 type Ctx = Context<{ Bindings: Env }>
 
 async function home(c: Ctx, lang: Lang) {
-  const [latest, popular, tags, sources, months, total] = await Promise.all([
-    listArticles(c.env.DB, HOME_LATEST),
+  const [recentDays, popular, tags, sources, months, total] = await Promise.all([
+    listRecentDays(c.env.DB, HOME_DAYS),
     listPopular(c.env.DB, 5),
     listTags(c.env.DB),
     listSources(c.env.DB),
     listMonths(c.env.DB),
     countArticles(c.env.DB),
   ])
+  const days = await Promise.all(
+    recentDays.map(async (date) => {
+      // fetch one extra to detect whether there are more than HOME_PER_DAY
+      const arts = await listArticlesByDay(c.env.DB, date, HOME_PER_DAY + 1)
+      return { date, articles: arts.slice(0, HOME_PER_DAY), hasMore: arts.length > HOME_PER_DAY }
+    }),
+  )
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderIndexPage({ latest, popular, tags, sources, months, total }, lang))
+  return c.html(renderIndexPage({ days, popular, tags, sources, months, total }, lang))
+}
+
+async function dayPage(c: Ctx, lang: Lang) {
+  const date = c.req.param('date') ?? ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.notFound()
+  const articles = await listArticlesByDay(c.env.DB, date)
+  if (articles.length === 0) return c.notFound()
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderDayPage(date, articles, lang))
 }
 
 const POSTS_PER_PAGE = 18
@@ -136,7 +158,8 @@ async function post(c: Ctx, lang: Lang) {
   }
   // Tally the view without delaying the response; popularity is best-effort
   c.executionCtx.waitUntil(recordView(c.env.DB, slug).catch(() => {}))
-  return c.html(await renderArticlePage(article, lang))
+  const related = await listRelated(c.env.DB, slug, parseTags(article.tags))
+  return c.html(await renderArticlePage(article, related, lang))
 }
 
 async function tags(c: Ctx, lang: Lang) {
@@ -175,6 +198,7 @@ for (const [base, lang] of [
   app.get(`${base}/search`, (c) => search(c, lang))
   app.get(`${base}/archive`, (c) => archive(c, lang))
   app.get(`${base}/archive/:month`, (c) => archiveMonth(c, lang))
+  app.get(`${base}/day/:date`, (c) => dayPage(c, lang))
   app.get(`${base}/tags`, (c) => tags(c, lang))
   app.get(`${base}/tags/:tag`, (c) => tag(c, lang))
   app.get(`${base}/about`, (c) => about(c, lang))
