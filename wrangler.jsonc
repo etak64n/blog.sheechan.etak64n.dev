@@ -4,6 +4,9 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-07",
   "compatibility_flags": ["nodejs_compat"],
+  // Static files in ./public are served from the edge before the Worker runs
+  // (e.g. /hero.webp). The Worker handles every other path.
+  "assets": { "directory": "./public" },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
