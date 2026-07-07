@@ -9,6 +9,8 @@
     "head_sampling_rate": 1
   },
   "routes": [
+    { "pattern": "blog.shiichan.etak64n.dev", "custom_domain": true },
+    // Legacy spelling, kept so old links 301-redirect (see src/index.ts)
     { "pattern": "blog.sheechan.etak64n.dev", "custom_domain": true }
   ],
   "d1_databases": [
@@ -21,7 +23,7 @@
   ],
   "vars": {
     // GitHub Actions OIDC: only this audience/sub combination may publish
-    "OIDC_AUDIENCE": "https://blog.sheechan.etak64n.dev",
+    "OIDC_AUDIENCE": "https://blog.shiichan.etak64n.dev",
     "ALLOWED_OIDC_SUB": "repo:etak64n/sheechan-reporter:ref:refs/heads/main",
     // Domains allowed in source_url. When adding a site to the watcher's
     // sources.json, add its domain here and deploy (defense in depth against

@@ -1,4 +1,4 @@
-# blog.sheechan.etak64n.dev
+# blog.shiichan.etak64n.dev
 
 Fully automated blog that publishes articles ingested from sheechan-reporter
 (a GitHub Actions bot). Cloudflare Workers + Hono + D1.
@@ -19,7 +19,7 @@ The UI supports dark/light themes: it follows the system preference by
 default, and the header toggle stores an explicit choice in localStorage.
 
 **Reader-facing fiction**: to readers, this blog is written by a girl named
-"sheechan" (しぃちゃん). Reader-facing pages must never mention that articles
+"shiichan" (しぃちゃん). Reader-facing pages must never mention that articles
 are AI-generated or automated, nor explain the tech stack or ingest pipeline
 (that belongs here in the README only).
 
@@ -59,7 +59,7 @@ npm install
 npx wrangler d1 create blog-sheechan   # paste the database_id into wrangler.jsonc
 npm run db:migrate:remote
 npm run check                          # typecheck
-npm run deploy                         # served at blog.sheechan.etak64n.dev via routes
+npm run deploy                         # served at blog.shiichan.etak64n.dev via routes (old sheechan domain 301-redirects)
 ```
 
 Local development:
@@ -79,7 +79,7 @@ domain to `ALLOWED_SOURCE_HOSTS` in `wrangler.jsonc` and `npm run deploy`
 
 ```sh
 # From the watcher repo's Actions, or locally using the .dev.vars token instead of OIDC
-curl -X DELETE https://blog.sheechan.etak64n.dev/api/articles/<slug> \
+curl -X DELETE https://blog.shiichan.etak64n.dev/api/articles/<slug> \
   -H "Authorization: Bearer <token>"
 ```
 

@@ -23,7 +23,20 @@ import { articleSchema } from './schema'
 
 const MAX_BODY_BYTES = 100_000
 
+const CANONICAL_HOST = 'blog.shiichan.etak64n.dev'
+// Original launch domain with the misspelled romanization
+const LEGACY_HOSTS = new Set(['blog.sheechan.etak64n.dev'])
+
 const app = new Hono<{ Bindings: Env }>()
+
+app.use('*', async (c, next) => {
+  const url = new URL(c.req.url)
+  if (LEGACY_HOSTS.has(url.hostname)) {
+    url.hostname = CANONICAL_HOST
+    return c.redirect(url.toString(), 301)
+  }
+  await next()
+})
 
 // ---- public pages ----
 

@@ -1,8 +1,8 @@
 import { marked } from 'marked'
 import type { ArticleListRow, ArticleRow, SourceCount, TagCount } from './db'
 
-const SITE_TITLE = 'sheechan blog'
-const SITE_ORIGIN = 'https://blog.sheechan.etak64n.dev'
+const SITE_TITLE = 'shiichan blog'
+const SITE_ORIGIN = 'https://blog.shiichan.etak64n.dev'
 const SITE_DESCRIPTION =
   'AWS・Cloudflare・OpenAI・Anthropic の最新テックニュースを、しぃちゃんが毎日わかりやすくお届けするブログ'
 
@@ -510,7 +510,7 @@ ${opts.head ?? ''}
 <a class="skip" href="#main">本文へスキップ</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="/">sheechan<span class="dot">.</span>blog<span class="cursor" aria-hidden="true">▍</span></a>
+    <a class="logo" href="/">shiichan<span class="dot">.</span>blog<span class="cursor" aria-hidden="true">▍</span></a>
     <nav class="site-nav">
       ${navLink('/', 'Posts', 'posts', opts.nav)}
       ${navLink('/tags', 'Tags', 'tags', opts.nav)}
@@ -525,7 +525,7 @@ ${opts.head ?? ''}
 ${main}
 <footer class="site-footer">
   <div class="wrap">
-    <span>${esc(SITE_TITLE)} — daily tech news, written by sheechan</span>
+    <span>${esc(SITE_TITLE)} — daily tech news, written by shiichan</span>
     <span>毎日更新 / <a href="/feed.xml">RSS</a></span>
   </div>
 </footer>
@@ -583,8 +583,8 @@ export function renderIndexPage(
 
   const hero = `
 <section class="hero wrap">
-  <p class="eyebrow">// sheechan's daily tech report</p>
-  <h1>Sheechan<br>Tech Report</h1>
+  <p class="eyebrow">// shiichan's daily tech report</p>
+  <h1>Shiichan<br>Tech Report</h1>
   <p class="lede">${esc(SITE_DESCRIPTION)}だよ。むずかしいニュースも、しぃちゃんと一緒ならこわくない!</p>
   <div class="stats">
     <span class="stat">ARTICLES<b>${totalArticles}</b></span>
