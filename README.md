@@ -1,6 +1,6 @@
 # blog.shiichan.etak64n.dev
 
-Fully automated blog that publishes articles ingested from sheechan-reporter
+Fully automated blog that publishes articles ingested from shiichan-reporter
 (a GitHub Actions bot). Cloudflare Workers + Hono + D1.
 
 ## Endpoints
@@ -29,7 +29,7 @@ The ingest API accepts only GitHub Actions OIDC tokens:
 
 1. JWT verified with `jose` (signature against GitHub's JWKS, `iss`, `aud`, expiry)
 2. `sub` must exactly equal `ALLOWED_OIDC_SUB`
-   (= `repo:etak64n/sheechan-reporter:ref:refs/heads/main`)
+   (= `repo:etak64n/shiichan-reporter:ref:refs/heads/main`)
 
 No long-lived secret is stored anywhere. Nothing but the watcher repository's
 Actions on `main` can publish.
@@ -83,5 +83,5 @@ curl -X DELETE https://blog.shiichan.etak64n.dev/api/articles/<slug> \
   -H "Authorization: Bearer <token>"
 ```
 
-Backups: the watcher side (`sheechan-reporter/articles/`) keeps a JSON archive of
+Backups: the watcher side (`shiichan-reporter/articles/`) keeps a JSON archive of
 every published article; the whole blog can be restored by re-POSTing them.

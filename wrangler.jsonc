@@ -24,7 +24,7 @@
   "vars": {
     // GitHub Actions OIDC: only this audience/sub combination may publish
     "OIDC_AUDIENCE": "https://blog.shiichan.etak64n.dev",
-    "ALLOWED_OIDC_SUB": "repo:etak64n/sheechan-reporter:ref:refs/heads/main",
+    "ALLOWED_OIDC_SUB": "repo:etak64n/shiichan-reporter:ref:refs/heads/main",
     // Domains allowed in source_url. When adding a site to the watcher's
     // sources.json, add its domain here and deploy (defense in depth against
     // arbitrary-link injection if auth were ever bypassed)
