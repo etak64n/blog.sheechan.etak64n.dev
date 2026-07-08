@@ -76,7 +76,7 @@ app.use('*', async (c, next) => {
 
 // ---- public pages (registered for both '' (ja) and '/en' (en)) ----
 
-const HOME_DAYS = 3
+const HOME_DAYS = 4
 // Cards loaded per day for the home page's horizontal scroll row (4 show at
 // full width; the rest are reachable by scrolling, or via the day page on mobile)
 const HOME_PER_DAY = 8
@@ -85,8 +85,17 @@ type Lang = 'ja' | 'en'
 type Ctx = Context<{ Bindings: Env }>
 
 async function home(c: Ctx, lang: Lang) {
+  // Show the last HOME_DAYS calendar days relative to the visitor's *local*
+  // date, not simply the most recent days that happen to have articles.
+  // Cloudflare resolves the visitor's IANA timezone from geo-IP (request.cf);
+  // fall back to Asia/Tokyo when it's unavailable (e.g. local dev).
+  const tz = (c.req.raw as { cf?: { timezone?: string } }).cf?.timezone || 'Asia/Tokyo'
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date())
+  const since = new Date(Date.parse(`${today}T00:00:00Z`) - (HOME_DAYS - 1) * 86400 * 1000)
+    .toISOString()
+    .slice(0, 10)
   const [recentDays, tags, sources, hotTopics] = await Promise.all([
-    listRecentDays(c.env.DB, HOME_DAYS),
+    listRecentDays(c.env.DB, HOME_DAYS, since),
     listTags(c.env.DB),
     listSources(c.env.DB),
     listHotTopics(c.env.DB, 10),

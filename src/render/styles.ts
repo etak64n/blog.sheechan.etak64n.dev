@@ -289,8 +289,9 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 :root[data-theme='dark'] .hot-cat { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
 .hot-new {
-  font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .14em; line-height: 1;
-  text-transform: uppercase; color: var(--on-primary); background: var(--primary); padding: .34em .55em;
+  font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .12em; line-height: 1;
+  text-transform: uppercase; color: var(--on-primary); background: var(--primary);
+  padding: .28em .6em; border: 1px solid var(--primary);
 }
 .hot-title {
   max-width: 100%; min-width: 0;

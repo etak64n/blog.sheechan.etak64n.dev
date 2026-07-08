@@ -280,14 +280,23 @@ export async function searchArticlesEn(
 }
 
 // The N most recent distinct publication dates (YYYY-MM-DD), newest first
-export async function listRecentDays(db: D1Database, n = 3): Promise<string[]> {
-  const { results } = await db
-    .prepare(
-      `SELECT DISTINCT substr(published_at, 1, 10) AS day
-       FROM articles ORDER BY day DESC LIMIT ?`,
-    )
-    .bind(n)
-    .all<{ day: string }>()
+// Most recent distinct publish days, newest first. `since` (YYYY-MM-DD) bounds
+// the window so the home page can show only the last N calendar days.
+export async function listRecentDays(db: D1Database, n = 3, since?: string): Promise<string[]> {
+  const stmt = since
+    ? db
+        .prepare(
+          `SELECT DISTINCT substr(published_at, 1, 10) AS day
+           FROM articles WHERE substr(published_at, 1, 10) >= ?2 ORDER BY day DESC LIMIT ?1`,
+        )
+        .bind(n, since)
+    : db
+        .prepare(
+          `SELECT DISTINCT substr(published_at, 1, 10) AS day
+           FROM articles ORDER BY day DESC LIMIT ?1`,
+        )
+        .bind(n)
+  const { results } = await stmt.all<{ day: string }>()
   return results.map((r) => r.day)
 }
 
