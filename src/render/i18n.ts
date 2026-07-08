@@ -11,6 +11,7 @@ export const SITE_DESCRIPTION_EN =
 
 export type Strings = {
   htmlLang: string
+  siteName: string
   desc: string
   skip: string
   heroH1: string
@@ -51,6 +52,7 @@ export type Strings = {
 export const T: Record<Lang, Strings> = {
   ja: {
     htmlLang: 'ja',
+    siteName: 'しぃちゃんのテックブログ',
     desc: SITE_DESCRIPTION,
     skip: '本文へスキップ',
     heroH1: 'テックニュースを、わかりやすく。',
@@ -92,6 +94,7 @@ export const T: Record<Lang, Strings> = {
   },
   en: {
     htmlLang: 'en',
+    siteName: 'Shiichan Tech Blog',
     desc: SITE_DESCRIPTION_EN,
     skip: 'Skip to content',
     heroH1: 'Tech news, made simple.',

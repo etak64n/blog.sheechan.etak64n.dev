@@ -2,7 +2,7 @@
 
 import { type Lang, T } from './i18n'
 import { STYLE } from './styles'
-import { FAVICON, GITHUB_BLOG, GITHUB_CREATOR, GITHUB_REPORTER, SITE_ORIGIN, SITE_TITLE, WAVE_MARK, basePath, esc, icon } from './helpers'
+import { FAVICON, GITHUB_BLOG, GITHUB_CREATOR, GITHUB_REPORTER, SITE_ORIGIN, basePath, esc, icon } from './helpers'
 
 export const THEME_INIT_SCRIPT = `
 (function () {
@@ -122,6 +122,7 @@ export type LayoutOpts = {
   title: string
   description?: string
   canonicalPath?: string
+  ogImage?: string
   head?: string
   nav?: NavKey
   lang: Lang
@@ -138,6 +139,7 @@ export function layout(opts: LayoutOpts, main: string): string {
   const base = basePath(lang)
   const description = opts.description ?? t.desc
   const path = opts.canonicalPath ?? '/'
+  const ogImage = opts.ogImage ? `${SITE_ORIGIN}${opts.ogImage}` : `${SITE_ORIGIN}/og.png`
   const canonical = `${SITE_ORIGIN}${base}${path}`
   const jaUrl = `${SITE_ORIGIN}${path}`
   const enUrl = `${SITE_ORIGIN}/en${path}`
@@ -152,10 +154,19 @@ export function layout(opts: LayoutOpts, main: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(opts.title)}</title>
 <meta name="description" content="${esc(description)}">
+<meta property="og:type" content="website">
 <meta property="og:title" content="${esc(opts.title)}">
 <meta property="og:description" content="${esc(description)}">
-<meta property="og:site_name" content="${esc(SITE_TITLE)}">
+<meta property="og:site_name" content="${esc(t.siteName)}">
 <meta property="og:url" content="${esc(canonical)}">
+<meta property="og:image" content="${esc(ogImage)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="${lang === 'en' ? 'en_US' : 'ja_JP'}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(opts.title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(ogImage)}">
 <link rel="canonical" href="${esc(canonical)}">
 <link rel="alternate" hreflang="ja" href="${esc(jaUrl)}">
 <link rel="alternate" hreflang="en" href="${esc(enUrl)}">
@@ -163,7 +174,7 @@ export function layout(opts: LayoutOpts, main: string): string {
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F1B33">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F8FBFF">
 <link rel="icon" href="${FAVICON}">
-<link rel="alternate" type="application/rss+xml" title="${esc(SITE_TITLE)}" href="${base}/feed.xml">
+<link rel="alternate" type="application/rss+xml" title="${esc(t.siteName)}" href="${base}/feed.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
@@ -175,7 +186,10 @@ ${opts.head ?? ''}
 <a class="skip" href="#main">${esc(t.skip)}</a>
 <header class="site-header">
   <div class="wrap">
-    <a class="logo" href="${base}/">${WAVE_MARK}shiichan<span class="logo-suffix"><span class="dot">.</span>blog</span></a>
+    <a class="logo" href="${base}/" aria-label="${esc(t.siteName)}">
+      <img class="logo-img logo-for-light" src="/logo-title.webp" width="1395" height="240" alt="${esc(t.siteName)}" fetchpriority="high" decoding="async">
+      <img class="logo-img logo-for-dark" src="/logo-title-dark.webp" width="1395" height="240" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
+    </a>
     <div class="nav-right">
       <nav class="site-nav" id="site-nav" aria-label="Site navigation">
         ${navLink(base, '/posts', 'Posts', 'posts', opts.nav)}
@@ -210,7 +224,9 @@ ${main}
   <div class="footer-inner">
     <div class="wrap footer-grid">
       <div class="fcol fcol-brand">
-        <a class="fbrand" href="${base}/">${WAVE_MARK}shiichan blog</a>
+        <a class="fbrand" href="${base}/" aria-label="${esc(t.siteName)}">
+          <img class="logo-img" src="/logo-title-dark.webp" width="1395" height="240" alt="${esc(t.siteName)}" loading="lazy" decoding="async">
+        </a>
         <p class="ftag">${esc(t.footerTag)}</p>
       </div>
       <nav class="fcol" aria-label="Explore">

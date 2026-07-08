@@ -2,7 +2,7 @@
 
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
-import { SITE_ORIGIN, SITE_TITLE, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags } from './helpers'
+import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags } from './helpers'
 import { layout } from './layout'
 import { DAY_MOBILE_SHOWN, type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
 import { type ArticleListRow, type ArticleRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
@@ -11,6 +11,8 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
   const { days, tags, sources, hotTopics } = data
   const t = T[lang]
   const base = basePath(lang)
+  // Hot Topics items published on one of the recent days shown get a NEW badge
+  const recentDates = new Set(days.map((g) => g.date))
 
   const hero = `
 <img class="hero-banner" src="/hero.webp" srcset="/hero-800.webp 800w, /hero-1200.webp 1200w, /hero.webp 1731w"
@@ -40,33 +42,58 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
 </section>`
         })
         .join('\n')}
-<p class="more-row"><a class="panel-more" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
+<p class="viewall"><a class="viewall-btn" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
     : '<p>No articles yet.</p>'
 
   return layout(
-    { title: SITE_TITLE, canonicalPath: '/', lang },
+    { title: T[lang].siteName, canonicalPath: '/', lang },
     `${hero}
 <div class="wrap">${WAVE_DIVIDER}</div>
 <div class="wrap home-cols">
   <main id="main" class="home-main-col">${mainCol}</main>
-  ${hotTopicsPanel(hotTopics, lang)}
+  ${hotTopicsPanel(hotTopics, lang, recentDates)}
 </div>`,
   )
 }
 
+// Numbered pagination: 1 … 4 5 [6] 7 8 … 20, with prev/next arrows. Always
+// shows the first and last page; a window of neighbours surrounds the current
+// page and gaps collapse to an ellipsis.
 export function pagination(base: string, page: number, pages: number, lang: Lang): string {
   if (pages <= 1) return ''
   const t = T[lang]
-  const link = (p: number, label: string, cls: string) =>
-    `<a class="pg-btn ${cls}" href="${base}/posts?page=${p}">${label}</a>`
-  const disabled = (label: string, cls: string) => `<span class="pg-btn ${cls} disabled">${label}</span>`
-  const prev = `${icon('arrow-left')}${esc(t.prev)}`
-  const next = `${esc(t.next)}${icon('arrow-right')}`
+  const href = (p: number) => (p === 1 ? `${base}/posts` : `${base}/posts?page=${p}`)
+  const num = (p: number) =>
+    p === page
+      ? `<span class="pg-num current" aria-current="page">${p}</span>`
+      : `<a class="pg-num" href="${href(p)}" aria-label="Page ${p}">${p}</a>`
+  const gap = '<span class="pg-gap" aria-hidden="true">…</span>'
+
+  // Build the set of page numbers to show: first, last, and a window of ±1
+  // around the current page.
+  const show = new Set<number>([1, pages, page, page - 1, page + 1])
+  const nums: string[] = []
+  let prev = 0
+  for (let p = 1; p <= pages; p++) {
+    if (!show.has(p)) continue
+    if (p - prev > 1) nums.push(gap)
+    nums.push(num(p))
+    prev = p
+  }
+
+  const prevBtn =
+    page > 1
+      ? `<a class="pg-btn prev" href="${href(page - 1)}" rel="prev" aria-label="${esc(t.prev)}">${icon('arrow-left')}</a>`
+      : `<span class="pg-btn prev disabled" aria-hidden="true">${icon('arrow-left')}</span>`
+  const nextBtn =
+    page < pages
+      ? `<a class="pg-btn next" href="${href(page + 1)}" rel="next" aria-label="${esc(t.next)}">${icon('arrow-right')}</a>`
+      : `<span class="pg-btn next disabled" aria-hidden="true">${icon('arrow-right')}</span>`
   return `
 <nav class="pagination" aria-label="Pagination">
-  ${page > 1 ? link(page - 1, prev, 'prev') : disabled(prev, 'prev')}
-  <span class="pg-info">${page} / ${pages}</span>
-  ${page < pages ? link(page + 1, next, 'next') : disabled(next, 'next')}
+  ${prevBtn}
+  <span class="pg-nums">${nums.join('')}</span>
+  ${nextBtn}
 </nav>`
 }
 
@@ -90,8 +117,8 @@ export function renderAllPostsPage(
 </section>`
   return layout(
     {
-      title: pages > 1 ? `Posts (${page}/${pages}) | ${SITE_TITLE}` : `Posts | ${SITE_TITLE}`,
-      description: lang === 'en' ? 'All posts on shiichan blog' : `${SITE_TITLE} の全記事一覧`,
+      title: pages > 1 ? `Posts (${page}/${pages}) | ${T[lang].siteName}` : `Posts | ${T[lang].siteName}`,
+      description: lang === 'en' ? 'All posts on shiichan blog' : `${T[lang].siteName} の全記事一覧`,
       canonicalPath: '/posts',
       nav: 'posts',
       lang,
@@ -121,7 +148,7 @@ export function renderTagsIndexPage(tags: TagCount[], sources: SourceCount[], la
 </section>`
   return layout(
     {
-      title: `Tags | ${SITE_TITLE}`,
+      title: `Tags | ${T[lang].siteName}`,
       description: lang === 'en' ? 'All tags' : 'タグ一覧',
       canonicalPath: '/tags',
       nav: 'tags',
@@ -145,7 +172,7 @@ export function renderTagPage(tag: string, rows: ArticleListRow[], lang: Lang): 
 </section>`
   return layout(
     {
-      title: `#${tag} | ${SITE_TITLE}`,
+      title: `#${tag} | ${T[lang].siteName}`,
       description: lang === 'en' ? `Articles tagged “${tag}”` : `タグ「${tag}」の記事一覧`,
       canonicalPath: `/tags/${encodeURIComponent(tag)}`,
       nav: 'tags',
@@ -174,12 +201,12 @@ export function renderAboutPage(lang: Lang): string {
 </div>`
   return layout(
     {
-      title: `About | ${SITE_TITLE}`,
-      description: lang === 'en' ? 'About shiichan' : `${SITE_TITLE} としぃちゃんの紹介`,
+      title: `About | ${T[lang].siteName}`,
+      description: lang === 'en' ? 'About shiichan' : `${T[lang].siteName} としぃちゃんの紹介`,
       canonicalPath: '/about',
       nav: 'about',
       lang,
-      head: `<meta property="og:image" content="${SITE_ORIGIN}/shiichan.webp">`,
+      ogImage: '/shiichan.webp',
     },
     main,
   )
@@ -213,7 +240,7 @@ export function renderSearchPage(query: string, rows: SearchHit[], lang: Lang): 
 </section>`
   return layout(
     {
-      title: query ? `${query} | ${SITE_TITLE}` : `Search | ${SITE_TITLE}`,
+      title: query ? `${query} | ${T[lang].siteName}` : `Search | ${T[lang].siteName}`,
       description: lang === 'en' ? 'Search articles' : '記事検索',
       canonicalPath: '/search',
       lang,
@@ -242,7 +269,7 @@ export function renderArchiveIndexPage(months: MonthCount[], lang: Lang): string
 </section>`
   return layout(
     {
-      title: `Archive | ${SITE_TITLE}`,
+      title: `Archive | ${T[lang].siteName}`,
       description: lang === 'en' ? 'Monthly archive' : '月別アーカイブ',
       canonicalPath: '/archive',
       lang,
@@ -265,7 +292,7 @@ export function renderArchiveMonthPage(month: string, rows: ArticleListRow[], la
 </section>`
   return layout(
     {
-      title: `${fmtMonth(month, lang)} | ${SITE_TITLE}`,
+      title: `${fmtMonth(month, lang)} | ${T[lang].siteName}`,
       description: lang === 'en' ? `Posts from ${fmtMonth(month, lang)}` : `${fmtMonth(month, lang)}の記事一覧`,
       canonicalPath: `/archive/${month}`,
       lang,
@@ -287,7 +314,7 @@ export function renderDayPage(date: string, rows: ArticleListRow[], lang: Lang):
 </section>`
   return layout(
     {
-      title: `${label} | ${SITE_TITLE}`,
+      title: `${label} | ${T[lang].siteName}`,
       description: lang === 'en' ? `Posts from ${label}` : `${label}の記事一覧`,
       canonicalPath: `/day/${date}`,
       lang,
@@ -313,7 +340,7 @@ export function renderPopularPage(rows: ArticleListRow[], lang: Lang): string {
 </section>`
   return layout(
     {
-      title: `${title} | ${SITE_TITLE}`,
+      title: `${title} | ${T[lang].siteName}`,
       description: lang === 'en' ? 'Most-read posts on shiichan blog' : 'よく読まれている記事一覧',
       canonicalPath: '/popular',
       lang,
@@ -336,7 +363,7 @@ export function renderSourcePage(name: string, rows: ArticleListRow[], lang: Lan
 </section>`
   return layout(
     {
-      title: `${name} | ${SITE_TITLE}`,
+      title: `${name} | ${T[lang].siteName}`,
       description: lang === 'en' ? `Posts from ${name}` : `${name} の記事一覧`,
       canonicalPath: `/source/${encodeURIComponent(name)}`,
       lang,
@@ -428,9 +455,10 @@ export async function renderArticlePage(
 </div>`
   return layout(
     {
-      title: `${title} | ${SITE_TITLE}`,
+      title: `${title} | ${T[lang].siteName}`,
       description: artSummary(row, lang),
       canonicalPath: `/posts/${row.slug}`,
+      ogImage: heroImage(row.source_name, row.emotion),
       head: `<link rel="alternate" type="text/markdown" href="${esc(mdPath)}">`,
       nav: 'posts',
       lang,
@@ -462,7 +490,7 @@ ${parseTags(r.tags)
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-  <title>${esc(SITE_TITLE)}</title>
+  <title>${esc(T[lang].siteName)}</title>
   <link>${SITE_ORIGIN}${base}/</link>
   <atom:link href="${SITE_ORIGIN}${base}/feed.xml" rel="self" type="application/rss+xml"/>
   <description>${esc(T[lang].rssDesc)}</description>
@@ -475,7 +503,7 @@ ${rows[0] ? `  <lastBuildDate>${new Date(rows[0].published_at).toUTCString()}</l
 export function renderNotFoundPage(lang: Lang): string {
   const base = basePath(lang)
   return layout(
-    { title: `404 | ${SITE_TITLE}`, lang },
+    { title: `404 | ${T[lang].siteName}`, lang },
     `<div class="notfound wrap" id="main">
   <h1>404 // NOT FOUND</h1>
   <p>${esc(T[lang].notFoundBody)}</p>

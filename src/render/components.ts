@@ -54,7 +54,7 @@ export function stars(importance: number | null): string {
 // Category chip: a source (e.g. "Cloudflare Changelog") linking to its page
 export function sourceCatChip(base: string, name: string, count?: number): string {
   const n = count !== undefined ? `<span class="n">${count}</span>` : ''
-  return `<a class="cat" style="--src-color:${sourceColor(name)}" href="${base}/source/${encodeURIComponent(name)}"><i></i>${esc(name)}${n}</a>`
+  return `<a class="cat" style="--brand:${sourceBrand(name)}" href="${base}/source/${encodeURIComponent(name)}">${esc(name)}${n}</a>`
 }
 
 export function sourceList(sources: SourceCount[]): string {
@@ -135,21 +135,29 @@ export type IndexData = {
 export const DAY_MOBILE_SHOWN = 3
 
 // "Hot Topics" rail: this week's highest-importance posts, ranked by their stars
-export function hotTopicsPanel(items: ArticleListRow[], lang: Lang): string {
+export function hotTopicsPanel(
+  items: ArticleListRow[],
+  lang: Lang,
+  recentDates: Set<string>,
+): string {
   if (!items.length) return ''
   const base = basePath(lang)
   const sub = lang === 'en' ? 'this week' : '今週の注目'
   const li = items
-    .map(
-      (r) => `
+    .map((r) => {
+      const isNew = recentDates.has(fmtDate(r.published_at))
+      return `
     <li class="hot-item">
       <a href="${base}/posts/${esc(r.slug)}">
-        <span class="hot-cat" style="--src-color:${sourceColor(r.source_name)}"><i></i>${esc(r.source_name)}</span>
+        <span class="hot-cat-row">
+          ${isNew ? '<span class="hot-new">NEW</span>' : ''}
+          <span class="hot-cat" style="--brand:${sourceBrand(r.source_name)}">${esc(r.source_name)}</span>
+        </span>
         <span class="hot-title">${esc(artTitle(r, lang))}</span>
         <span class="hot-meta">${stars(r.importance)}<span class="hot-date">${esc(fmtDate(r.published_at))}</span></span>
       </a>
-    </li>`,
-    )
+    </li>`
+    })
     .join('')
   return `
 <aside class="home-rail">

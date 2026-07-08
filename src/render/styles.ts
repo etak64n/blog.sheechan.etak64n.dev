@@ -94,12 +94,22 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
 .logo {
-  display: inline-flex; align-items: center; gap: .55em;
-  font-family: var(--display); font-weight: 700; font-size: 1.15rem;
-  color: var(--heading); text-decoration: none; white-space: nowrap;
+  display: inline-flex; align-items: center; text-decoration: none; flex: none;
 }
-.logo .wave-mark { width: 30px; height: 18px; color: var(--accent); flex: none; }
-.logo .dot { color: var(--accent); }
+.logo .logo-img { height: 30px; width: auto; }
+/* Hand-lettered wordmark: swap the colour version (light theme) for the
+   lightened version (dark theme), mirroring the theme-toggle logic. Base =
+   light appearance; dark applies via media query / [data-theme='dark']. */
+.logo-for-dark { display: none; }
+.logo-for-light { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .logo-for-light { display: none; }
+  :root:not([data-theme]) .logo-for-dark { display: block; }
+}
+:root[data-theme='dark'] .logo-for-light { display: none; }
+:root[data-theme='dark'] .logo-for-dark { display: block; }
+:root[data-theme='light'] .logo-for-light { display: block; }
+:root[data-theme='light'] .logo-for-dark { display: none; }
 .nav-right { display: flex; align-items: center; gap: .4em; }
 .nav-controls { display: flex; align-items: center; gap: .1em; }
 .lang-switch {
@@ -193,16 +203,24 @@ button { -webkit-tap-highlight-color: transparent; }
 .hero-cats::-webkit-scrollbar-thumb, .hero-tags::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 0; }
 .hero-cats::-webkit-scrollbar-track, .hero-tags::-webkit-scrollbar-track { background: transparent; }
 .hero-tags .tag { flex: none; }
+/* Category chip with a brand-colored frame (matches the card genre-tag) */
 .cat {
   flex: none; display: inline-flex; align-items: center; gap: .5em;
   font-family: var(--mono); font-size: .74rem; font-weight: 600; white-space: nowrap;
-  color: var(--text); text-decoration: none;
-  border: 1px solid var(--line-strong); border-radius: 0; padding: .3em .9em;
-  background: var(--surface); transition: border-color .15s ease, color .15s ease;
+  color: var(--brand, var(--primary)); text-decoration: none; border-radius: 0; padding: .3em .9em;
+  border: 1px solid color-mix(in srgb, var(--brand, var(--accent)) 38%, transparent);
+  background: color-mix(in srgb, var(--brand, var(--accent)) 12%, transparent);
+  transition: border-color .15s ease, background .15s ease;
 }
-.cat i { width: 8px; height: 8px; border-radius: 0; flex: none; background: var(--src-color, var(--accent)); }
-.cat:hover { border-color: var(--accent); color: var(--primary); }
-.cat .n { color: var(--muted); }
+.cat:hover {
+  border-color: color-mix(in srgb, var(--brand, var(--accent)) 60%, transparent);
+  background: color-mix(in srgb, var(--brand, var(--accent)) 20%, transparent);
+}
+.cat .n { color: color-mix(in srgb, var(--brand, var(--accent)) 45%, var(--muted)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .cat { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
+}
+:root[data-theme='dark'] .cat { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
 
 /* ---- wave divider ---- */
 .wave-divider { color: var(--accent); margin: 30px 0 4px; }
@@ -257,12 +275,23 @@ button { -webkit-tap-highlight-color: transparent; }
   display: flex; flex-direction: column; gap: 7px; align-items: flex-start;
   min-width: 0; padding: 13px 0; text-decoration: none; color: var(--heading);
 }
+.hot-cat-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Match the card genre-tag: brand-colored frame, not a neutral border + dot */
 .hot-cat {
-  display: inline-flex; align-items: center; gap: .45em;
   font-family: var(--mono); font-size: .68rem; font-weight: 700; white-space: nowrap;
-  color: var(--text); border: 1px solid var(--line-strong); padding: .22em .7em; background: var(--surface);
+  color: var(--brand, var(--primary));
+  background: color-mix(in srgb, var(--brand, var(--accent)) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand, var(--accent)) 38%, transparent);
+  padding: .2em .7em;
 }
-.hot-cat i { width: 7px; height: 7px; flex: none; background: var(--src-color, var(--accent)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .hot-cat { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
+}
+:root[data-theme='dark'] .hot-cat { color: color-mix(in srgb, var(--brand, var(--accent)) 55%, #EAF3FE); }
+.hot-new {
+  font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .14em; line-height: 1;
+  text-transform: uppercase; color: var(--on-primary); background: var(--primary); padding: .34em .55em;
+}
 .hot-title {
   max-width: 100%; min-width: 0;
   font-family: var(--display); font-weight: 700; font-size: .92rem; line-height: 1.4;
@@ -399,19 +428,44 @@ button { -webkit-tap-highlight-color: transparent; }
 .about-text b { color: var(--primary); font-weight: 700; }
 .more-row { margin-top: 24px; }
 .more-row .panel-more { font-size: .82rem; }
-.pagination {
-  display: flex; align-items: center; justify-content: center; gap: 14px;
-  margin-top: 40px; font-family: var(--mono); font-size: .82rem;
+/* Prominent "view all posts" button under the day rows */
+.viewall { margin-top: 36px; text-align: center; }
+.viewall-btn {
+  display: inline-flex; align-items: center; gap: .5em;
+  font-family: var(--mono); font-size: .82rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--on-primary); background: var(--primary); border: 1px solid var(--primary);
+  padding: .8em 2em; text-decoration: none;
+  transition: background .15s ease, border-color .15s ease;
 }
-.pg-btn {
-  display: inline-flex; align-items: center; gap: .4em;
+.viewall-btn:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.viewall-btn svg { width: 15px; height: 15px; }
+.pagination {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 40px; font-family: var(--mono); font-size: .82rem; flex-wrap: wrap;
+}
+.pg-nums { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.pg-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2.2em; height: 2.2em; padding: 0 .5em;
   color: var(--primary); text-decoration: none; font-weight: 600;
-  border: 1.5px solid var(--line-strong); border-radius: 0; padding: .5em 1.2em;
+  border: 1.5px solid var(--line-strong); border-radius: 0;
+  background: var(--surface); transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.pg-num:hover { background: var(--tag-bg); border-color: var(--accent); }
+.pg-num.current {
+  color: var(--on-primary); background: var(--primary); border-color: var(--primary); cursor: default;
+}
+.pg-gap { color: var(--muted); padding: 0 .1em; letter-spacing: .1em; }
+.pg-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 2.2em; height: 2.2em;
+  color: var(--primary); text-decoration: none; font-weight: 600;
+  border: 1.5px solid var(--line-strong); border-radius: 0;
   background: var(--surface); transition: background .15s ease, border-color .15s ease;
 }
 .pg-btn:hover { background: var(--tag-bg); border-color: var(--accent); }
 .pg-btn.disabled { color: var(--muted); opacity: .45; pointer-events: none; }
-.pg-info { color: var(--muted); }
+.pg-btn svg { width: 15px; height: 15px; }
 
 /* ---- about hero ---- */
 .about-hero { display: flex; align-items: center; gap: 26px; margin-bottom: 8px; }
@@ -496,17 +550,16 @@ button { -webkit-tap-highlight-color: transparent; }
    so the whole picture shows with minimal cropping. */
 .linkcard-thumb { flex: none; width: 224px; align-self: stretch; overflow: hidden; background: var(--surface-2); }
 .linkcard-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
-/* Vendor-logo fallback when no OG image is cached */
+/* Vendor-logo fallback when no OG image is cached (e.g. AWS What's New).
+   The logo fills the panel edge-to-edge so there's no empty margin. */
 .linkcard-logo {
-  flex: none; width: 132px; align-self: stretch; display: flex; align-items: center; justify-content: center;
-  padding: 14px; background: var(--surface-2); border-left: 1px solid var(--line);
+  flex: none; width: 132px; align-self: stretch; overflow: hidden; background: var(--surface-2);
 }
-.linkcard-logo img { display: block; width: 48px; height: 48px; object-fit: contain; }
+.linkcard-logo img { display: block; width: 100%; height: 100%; object-fit: cover; }
 @media (max-width: 480px) {
   .linkcard { min-height: 96px; }
   .linkcard-thumb { width: 140px; }
-  .linkcard-logo { width: 96px; padding: 10px; }
-  .linkcard-logo img { width: 40px; height: 40px; }
+  .linkcard-logo { width: 108px; }
 }
 
 /* ---- article: ToC sidebar + hero + tags ---- */
@@ -649,10 +702,9 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .fcol-brand { max-width: 340px; }
 .footer-inner .fbrand {
-  display: inline-flex; align-items: center; gap: .5em; color: #FFFFFF;
-  font-family: var(--display); font-weight: 700; font-size: 1.1rem; text-decoration: none;
+  display: inline-flex; align-items: center; text-decoration: none;
 }
-.footer-inner .fbrand .wave-mark { width: 26px; height: 16px; color: #EAF3FE; }
+.footer-inner .fbrand .logo-img { height: 38px; width: auto; }
 .footer-inner .ftag { margin: 8px 0 0; color: #A9C4EE; font-size: .8rem; line-height: 1.5; }
 .fhead {
   margin: 0 0 9px; font-family: var(--mono); font-size: .72rem; font-weight: 700;
@@ -691,9 +743,7 @@ button { -webkit-tap-highlight-color: transparent; }
   .site-nav a.textlink:hover, .site-nav a.active { background: var(--tag-bg); }
 }
 @media (max-width: 560px) {
-  .logo { font-size: .95rem; gap: .4em; }
-  .logo .wave-mark { width: 24px; }
-  .logo-suffix { display: none; }
+  .logo .logo-img { height: 26px; }
   .nav-icon { width: 34px; height: 34px; }
 }
 
