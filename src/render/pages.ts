@@ -2,17 +2,10 @@
 
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
-import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, articleKind, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags, sourceBrand } from './helpers'
+import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags, sourceBrand } from './helpers'
 import { LIST_FILTER_SCRIPT, layout } from './layout'
 import { DAY_MOBILE_SHOWN, type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
 import { type ArticleListRow, type ArticleRow, type IndexRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
-
-const KIND_CLASS: Record<string, string> = {
-  Blog: 'k-blog',
-  News: 'k-news',
-  Changelog: 'k-changelog',
-  'Release Notes': 'k-relnotes',
-}
 
 export function renderIndexPage(data: IndexData, lang: Lang): string {
   const { days, tags, sources, hotTopics } = data
@@ -135,8 +128,8 @@ export function renderAllPostsPage(
 }
 
 // Full index: one compact table row per article, linking both the shiichan
-// post and the original source, with a derived content-kind badge. Source
-// chips at the top toggle rows on/off (client-side, via LIST_FILTER_SCRIPT).
+// post and the original source. Source chips at the top toggle rows on/off
+// (client-side, via LIST_FILTER_SCRIPT).
 export function renderListPage(rows: IndexRow[], lang: Lang): string {
   const t = T[lang]
   const base = basePath(lang)
@@ -151,17 +144,15 @@ export function renderListPage(rows: IndexRow[], lang: Lang): string {
     )
     .join('')
   const bodyRows = rows
-    .map((r) => {
-      const kind = articleKind(r.source_name)
-      return `
+    .map(
+      (r) => `
     <tr class="lx-row" data-source="${esc(r.source_name)}">
       <td class="lx-date">${esc(fmtDate(r.published_at))}</td>
       <td class="lx-src"><span class="genre-tag" style="--brand:${sourceBrand(r.source_name)}">${esc(r.source_name)}</span></td>
-      <td class="lx-kind"><span class="lx-kind-tag ${KIND_CLASS[kind]}">${kind}</span></td>
       <td class="lx-post"><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></td>
       <td class="lx-orig"><a href="${esc(r.source_url)}" target="_blank" rel="noopener" aria-label="${esc(t.colOriginal)}">${icon('arrow-up-right')}</a></td>
-    </tr>`
-    })
+    </tr>`,
+    )
     .join('')
   const main = `
 <section class="page-head wrap">
@@ -176,7 +167,6 @@ export function renderListPage(rows: IndexRow[], lang: Lang): string {
         <tr>
           <th class="lx-date">${esc(t.colDate)}</th>
           <th class="lx-src">${esc(t.colSource)}</th>
-          <th class="lx-kind">${esc(t.colKind)}</th>
           <th class="lx-post">${esc(t.colPost)}</th>
           <th class="lx-orig">${esc(t.colOriginal)}</th>
         </tr>
