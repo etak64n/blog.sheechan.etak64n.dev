@@ -469,7 +469,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .metabtn:hover { background: var(--tag-bg); border-color: var(--accent); }
 /* External-link "blog card" pointing to the original announcement (after the greeting) */
 .linkcard {
-  display: flex; align-items: stretch; gap: 16px; margin: 10px 0 26px;
+  display: flex; align-items: stretch; gap: 16px; margin: 10px 0 26px; min-height: 116px;
   border: 1px solid var(--line); background: var(--surface); overflow: hidden;
   text-decoration: none; color: var(--text);
   transition: border-color .15s ease, box-shadow .15s ease;
@@ -492,8 +492,9 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .linkcard-host > span { overflow: hidden; text-overflow: ellipsis; }
 .linkcard-favicon { width: 16px; height: 16px; flex: none; border-radius: 3px; }
-/* Open Graph preview image (the link-embed thumbnail) */
-.linkcard-thumb { flex: none; width: 190px; align-self: stretch; overflow: hidden; background: var(--surface-2); }
+/* Open Graph preview image (the link-embed thumbnail). ~2:1 like most OG images,
+   so the whole picture shows with minimal cropping. */
+.linkcard-thumb { flex: none; width: 224px; align-self: stretch; overflow: hidden; background: var(--surface-2); }
 .linkcard-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 /* Vendor-logo fallback when no OG image is cached */
 .linkcard-logo {
@@ -502,8 +503,9 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .linkcard-logo img { display: block; width: 48px; height: 48px; object-fit: contain; }
 @media (max-width: 480px) {
-  .linkcard-thumb { width: 118px; }
-  .linkcard-logo { width: 92px; padding: 10px; }
+  .linkcard { min-height: 96px; }
+  .linkcard-thumb { width: 140px; }
+  .linkcard-logo { width: 96px; padding: 10px; }
   .linkcard-logo img { width: 40px; height: 40px; }
 }
 
