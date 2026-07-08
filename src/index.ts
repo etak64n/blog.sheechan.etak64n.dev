@@ -84,6 +84,36 @@ const POPULAR_LIMIT = 40
 type Lang = 'ja' | 'en'
 type Ctx = Context<{ Bindings: Env }>
 
+// Edge-cache a content-derived response (visitor-independent, no writes) in the
+// data-center cache, keyed by full URL. The first request per colo is a MISS;
+// subsequent ones are served without touching the Worker's D1 queries until the
+// s-maxage TTL lapses. Excluded on purpose: the home page (per-visitor date and
+// timezone) and article pages (the best-effort view counter needs the Worker to
+// run). Security headers are (re)applied by the global middleware on every hit,
+// so the cached copy only needs the route's own headers.
+const EDGE_TTL = 600 // seconds; list pages are static between publishes
+async function edgeCached(
+  c: Ctx,
+  render: () => Promise<Response> | Response,
+  ttl: number = EDGE_TTL,
+): Promise<Response> {
+  const cache = caches.default
+  const key = new Request(c.req.url, { method: 'GET' })
+  const cached = await cache.match(key)
+  if (cached) {
+    const hit = new Response(cached.body, cached)
+    hit.headers.set('x-edge-cache', 'HIT')
+    return hit
+  }
+  const fresh = await render()
+  if (fresh.status === 200) {
+    fresh.headers.set('cache-control', `public, max-age=60, s-maxage=${ttl}`)
+    c.executionCtx.waitUntil(cache.put(key, fresh.clone()))
+    fresh.headers.set('x-edge-cache', 'MISS')
+  }
+  return fresh
+}
+
 async function home(c: Ctx, lang: Lang) {
   // Show the last HOME_DAYS calendar days relative to the visitor's *local*
   // date, not simply the most recent days that happen to have articles.
@@ -113,8 +143,7 @@ async function home(c: Ctx, lang: Lang) {
 
 async function popular(c: Ctx, lang: Lang) {
   const rows = await listPopular(c.env.DB, POPULAR_LIMIT)
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderPopularPage(rows, lang))
+  return edgeCached(c, () => c.html(renderPopularPage(rows, lang)))
 }
 
 async function dayPage(c: Ctx, lang: Lang) {
@@ -122,8 +151,7 @@ async function dayPage(c: Ctx, lang: Lang) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.notFound()
   const articles = await listArticlesByDay(c.env.DB, date)
   if (articles.length === 0) return c.notFound()
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderDayPage(date, articles, lang))
+  return edgeCached(c, () => c.html(renderDayPage(date, articles, lang)))
 }
 
 const POSTS_PER_PAGE = 28
@@ -134,16 +162,14 @@ async function posts(c: Ctx, lang: Lang) {
   const requested = parseInt(c.req.query('page') ?? '1', 10)
   const page = Math.min(Math.max(1, Number.isNaN(requested) ? 1 : requested), pages)
   const articles = await listArticlesPage(c.env.DB, POSTS_PER_PAGE, (page - 1) * POSTS_PER_PAGE)
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderAllPostsPage(articles, total, page, pages, lang))
+  return edgeCached(c, () => c.html(renderAllPostsPage(articles, total, page, pages, lang)))
 }
 
 async function listAll(c: Ctx, lang: Lang) {
   const source = (c.req.query('source') ?? '').trim().slice(0, 40) || undefined
   const rows = await listAllArticles(c.env.DB, source)
   if (source && rows.length === 0) return c.notFound()
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderListPage(rows, lang, source))
+  return edgeCached(c, () => c.html(renderListPage(rows, lang, source)))
 }
 
 async function search(c: Ctx, lang: Lang) {
@@ -159,8 +185,7 @@ async function search(c: Ctx, lang: Lang) {
 
 async function archive(c: Ctx, lang: Lang) {
   const months = await listMonths(c.env.DB)
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderArchiveIndexPage(months, lang))
+  return edgeCached(c, () => c.html(renderArchiveIndexPage(months, lang)))
 }
 
 async function archiveMonth(c: Ctx, lang: Lang) {
@@ -168,8 +193,7 @@ async function archiveMonth(c: Ctx, lang: Lang) {
   if (!/^\d{4}-\d{2}$/.test(month)) return c.notFound()
   const articles = await listArticlesByMonth(c.env.DB, month)
   if (articles.length === 0) return c.notFound()
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderArchiveMonthPage(month, articles, lang))
+  return edgeCached(c, () => c.html(renderArchiveMonthPage(month, articles, lang)))
 }
 
 // `/posts/<slug>.md` serves the raw markdown (slugs themselves never contain dots)
@@ -194,36 +218,37 @@ async function post(c: Ctx, lang: Lang) {
 
 async function tags(c: Ctx, lang: Lang) {
   const [tagList, sources] = await Promise.all([listTags(c.env.DB), listSources(c.env.DB)])
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderTagsIndexPage(tagList, sources, lang))
+  return edgeCached(c, () => c.html(renderTagsIndexPage(tagList, sources, lang)))
 }
 
 async function tag(c: Ctx, lang: Lang) {
   const tagName = c.req.param('tag') ?? ''
   const articles = await listArticlesByTag(c.env.DB, tagName)
   if (articles.length === 0) return c.notFound()
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderTagPage(tagName, articles, lang))
+  return edgeCached(c, () => c.html(renderTagPage(tagName, articles, lang)))
 }
 
 async function source(c: Ctx, lang: Lang) {
   const name = c.req.param('name') ?? ''
   const articles = await listArticlesBySource(c.env.DB, name)
   if (articles.length === 0) return c.notFound()
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderSourcePage(name, articles, lang))
+  return edgeCached(c, () => c.html(renderSourcePage(name, articles, lang)))
 }
 
 function about(c: Ctx, lang: Lang) {
-  c.header('cache-control', 'public, max-age=300')
-  return c.html(renderAboutPage(lang))
+  return edgeCached(c, () => c.html(renderAboutPage(lang)))
 }
 
 async function feed(c: Ctx, lang: Lang) {
   const articles = await listArticles(c.env.DB, 30)
-  c.header('cache-control', 'public, max-age=900')
-  c.header('content-type', 'application/rss+xml; charset=utf-8')
-  return c.body(renderRssFeed(articles, lang))
+  return edgeCached(
+    c,
+    () => {
+      c.header('content-type', 'application/rss+xml; charset=utf-8')
+      return c.body(renderRssFeed(articles, lang))
+    },
+    900,
+  )
 }
 
 for (const [base, lang] of [
