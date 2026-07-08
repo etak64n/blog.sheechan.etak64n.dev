@@ -5,6 +5,7 @@ import {
   countArticles,
   deleteArticle,
   getArticle,
+  listAllArticles,
   listArticles,
   listArticlesByDay,
   listArticlesByMonth,
@@ -34,6 +35,7 @@ import {
   renderDayPage,
   renderArticlePage,
   renderIndexPage,
+  renderListPage,
   renderNotFoundPage,
   renderPopularPage,
   renderRssFeed,
@@ -127,6 +129,12 @@ async function posts(c: Ctx, lang: Lang) {
   return c.html(renderAllPostsPage(articles, total, page, pages, lang))
 }
 
+async function listAll(c: Ctx, lang: Lang) {
+  const rows = await listAllArticles(c.env.DB)
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderListPage(rows, lang))
+}
+
 async function search(c: Ctx, lang: Lang) {
   const query = (c.req.query('q') ?? '').trim().slice(0, 100)
   const results = query
@@ -213,6 +221,7 @@ for (const [base, lang] of [
 ] as [string, Lang][]) {
   app.get(base || '/', (c) => home(c, lang))
   app.get(`${base}/posts`, (c) => posts(c, lang))
+  app.get(`${base}/list`, (c) => listAll(c, lang))
   app.get(`${base}/posts/:slug`, (c) => post(c, lang))
   app.get(`${base}/popular`, (c) => popular(c, lang))
   app.get(`${base}/search`, (c) => search(c, lang))

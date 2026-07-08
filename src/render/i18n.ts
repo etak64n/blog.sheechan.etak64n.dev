@@ -39,6 +39,12 @@ export type Strings = {
   postsCount: (n: number) => string
   monthsCount: (nMonths: number, nPosts: number) => string
   source: string
+  listDesc: string
+  colDate: string
+  colSource: string
+  colKind: string
+  colPost: string
+  colOriginal: string
   notFoundBody: string
   footerTag: string
   footerRight: string
@@ -83,6 +89,12 @@ export const T: Record<Lang, Strings> = {
     postsCount: (n) => `${n} 件`,
     monthsCount: (nm, np) => `${nm} ヶ月 / ${np} 件`,
     source: '原文',
+    listDesc: '全記事の一覧。しぃちゃんの記事と元記事へのリンクつき。',
+    colDate: '日付',
+    colSource: 'ソース',
+    colKind: '種別',
+    colPost: 'しぃちゃんの記事',
+    colOriginal: '元の記事',
     notFoundBody: 'ごめんね、このページは見つからなかったよ。',
     footerTag: 'shiichan blog — daily tech news, written by shiichan',
     footerRight: '毎日更新',
@@ -125,6 +137,12 @@ export const T: Record<Lang, Strings> = {
     postsCount: (n) => `${n} POST${n === 1 ? '' : 'S'}`,
     monthsCount: (nm, np) => `${nm} MONTH${nm === 1 ? '' : 'S'} / ${np} POSTS`,
     source: 'Source',
+    listDesc: 'Every post at a glance, linking both the shiichan write-up and the original.',
+    colDate: 'Date',
+    colSource: 'Source',
+    colKind: 'Type',
+    colPost: "Shii's post",
+    colOriginal: 'Original',
     notFoundBody: 'Sorry, this page could not be found.',
     footerTag: 'shiichan blog — daily tech news, written by shiichan',
     footerRight: 'Daily updates',

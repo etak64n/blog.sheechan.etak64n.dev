@@ -2,10 +2,17 @@
 
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
-import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags } from './helpers'
+import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, articleKind, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags, sourceBrand } from './helpers'
 import { layout } from './layout'
 import { DAY_MOBILE_SHOWN, type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
-import { type ArticleListRow, type ArticleRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
+import { type ArticleListRow, type ArticleRow, type IndexRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
+
+const KIND_CLASS: Record<string, string> = {
+  Blog: 'k-blog',
+  News: 'k-news',
+  Changelog: 'k-changelog',
+  'Release Notes': 'k-relnotes',
+}
 
 export function renderIndexPage(data: IndexData, lang: Lang): string {
   const { days, tags, sources, hotTopics } = data
@@ -121,6 +128,57 @@ export function renderAllPostsPage(
       description: lang === 'en' ? 'All posts on shiichan blog' : `${T[lang].siteName} の全記事一覧`,
       canonicalPath: '/posts',
       nav: 'posts',
+      lang,
+    },
+    main,
+  )
+}
+
+// Full index: one dense table row per article, linking both the shiichan post
+// and the original source, with a derived content-kind badge.
+export function renderListPage(rows: IndexRow[], lang: Lang): string {
+  const t = T[lang]
+  const base = basePath(lang)
+  const body = rows
+    .map((r) => {
+      const kind = articleKind(r.source_name)
+      return `
+    <tr>
+      <td class="lx-date">${esc(fmtDate(r.published_at))}</td>
+      <td class="lx-src"><span class="lx-srcchip" style="--brand:${sourceBrand(r.source_name)}"><i></i>${esc(r.source_name)}</span></td>
+      <td class="lx-kind"><span class="lx-kind-tag ${KIND_CLASS[kind]}">${kind}</span></td>
+      <td class="lx-post"><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></td>
+      <td class="lx-orig"><a href="${esc(r.source_url)}" target="_blank" rel="noopener" aria-label="${esc(t.colOriginal)}">${icon('arrow-up-right')}</a></td>
+    </tr>`
+    })
+    .join('')
+  const main = `
+<section class="page-head wrap">
+  <h1>INDEX</h1>
+  <p class="count">${t.postsCount(rows.length)}</p>
+</section>
+<section class="list-section wrap" id="main">
+  <div class="lx-wrap">
+    <table class="lx-table">
+      <thead>
+        <tr>
+          <th class="lx-date">${esc(t.colDate)}</th>
+          <th class="lx-src">${esc(t.colSource)}</th>
+          <th class="lx-kind">${esc(t.colKind)}</th>
+          <th class="lx-post">${esc(t.colPost)}</th>
+          <th class="lx-orig">${esc(t.colOriginal)}</th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>
+</section>`
+  return layout(
+    {
+      title: `Index | ${t.siteName}`,
+      description: t.listDesc,
+      canonicalPath: '/list',
+      nav: 'index',
       lang,
     },
     main,

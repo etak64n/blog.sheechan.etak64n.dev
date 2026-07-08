@@ -129,6 +129,16 @@ export function sourceBrand(name: string): string {
   return '#2E6FD0'
 }
 
+export type ArticleKind = 'Blog' | 'News' | 'Changelog' | 'Release Notes'
+
+// Map a source name to one of the four content kinds shown in the index table.
+export function articleKind(sourceName: string): ArticleKind {
+  if (/release\s*notes/i.test(sourceName)) return 'Release Notes'
+  if (/changelog|what'?s\s*new/i.test(sourceName)) return 'Changelog'
+  if (/news/i.test(sourceName)) return 'News'
+  return 'Blog'
+}
+
 // Lucide-style inline SVG icons (24x24 stroke), rendered at 14px via CSS
 export const ICONS: Record<string, string> = {
   'arrow-left': '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',

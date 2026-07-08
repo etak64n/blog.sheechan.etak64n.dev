@@ -53,6 +53,26 @@ export async function countArticles(db: D1Database): Promise<number> {
   return row?.n ?? 0
 }
 
+// One row per article for the full index table: enough to link both the
+// shiichan post and the original source, plus derive the content kind.
+export type IndexRow = {
+  slug: string
+  title: string
+  title_en: string | null
+  source_name: string
+  source_url: string
+  published_at: string
+}
+
+export async function listAllArticles(db: D1Database): Promise<IndexRow[]> {
+  const { results } = await db
+    .prepare(
+      'SELECT slug, title, title_en, source_name, source_url, published_at FROM articles ORDER BY published_at DESC',
+    )
+    .all<IndexRow>()
+  return results
+}
+
 export async function listArticlesPage(
   db: D1Database,
   limit: number,

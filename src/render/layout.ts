@@ -116,7 +116,7 @@ export async function contentSecurityPolicy(): Promise<string> {
   return cspCache
 }
 
-export type NavKey = 'posts' | 'popular' | 'tags' | 'archive' | 'about'
+export type NavKey = 'posts' | 'index' | 'popular' | 'tags' | 'archive' | 'about'
 
 export type LayoutOpts = {
   title: string
@@ -193,6 +193,7 @@ ${opts.head ?? ''}
     <div class="nav-right">
       <nav class="site-nav" id="site-nav" aria-label="Site navigation">
         ${navLink(base, '/posts', 'Posts', 'posts', opts.nav)}
+        ${navLink(base, '/list', 'Index', 'index', opts.nav)}
         ${navLink(base, '/popular', 'Popular', 'popular', opts.nav)}
         ${navLink(base, '/tags', 'Tags', 'tags', opts.nav)}
         ${navLink(base, '/archive', 'Archive', 'archive', opts.nav)}
@@ -234,6 +235,7 @@ ${main}
         <ul>
           <li><a href="${base}/">Home</a></li>
           <li><a href="${base}/posts">Posts</a></li>
+          <li><a href="${base}/list">Index</a></li>
           <li><a href="${base}/tags">Tags</a></li>
           <li><a href="${base}/archive">Archive</a></li>
           <li><a href="${base}/search">Search</a></li>
