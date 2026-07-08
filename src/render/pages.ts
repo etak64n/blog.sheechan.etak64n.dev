@@ -3,7 +3,7 @@
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
 import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags, sourceBrand } from './helpers'
-import { LIST_FILTER_SCRIPT, layout } from './layout'
+import { layout } from './layout'
 import { DAY_MOBILE_SHOWN, type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
 import { type ArticleListRow, type ArticleRow, type IndexRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
 
@@ -127,40 +127,42 @@ export function renderAllPostsPage(
   )
 }
 
-// Full index: one compact table row per article, linking both the shiichan
-// post and the original source. Source chips at the top toggle rows on/off
-// (client-side, via LIST_FILTER_SCRIPT).
-export function renderListPage(rows: IndexRow[], lang: Lang): string {
+// Host of a URL without the leading www., for the original-article fallback.
+function urlHost(u: string): string {
+  try {
+    return new URL(u).hostname.replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
+// Full index: one compact table row per article. Clicking a source narrows the
+// page to that source (server-side, ?source=). Columns link the shiichan post,
+// the source page, and show the original article's own title.
+export function renderListPage(rows: IndexRow[], lang: Lang, activeSource?: string): string {
   const t = T[lang]
   const base = basePath(lang)
-  // Source filter chips, ordered by frequency
-  const counts = new Map<string, number>()
-  for (const r of rows) counts.set(r.source_name, (counts.get(r.source_name) ?? 0) + 1)
-  const filters = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(
-      ([name, n]) =>
-        `<button type="button" class="lx-filter" data-src="${esc(name)}" style="--brand:${sourceBrand(name)}" aria-pressed="true">${esc(name)}<span class="n">${n}</span></button>`,
-    )
-    .join('')
   const bodyRows = rows
     .map(
       (r) => `
-    <tr class="lx-row" data-source="${esc(r.source_name)}">
+    <tr class="lx-row">
       <td class="lx-date">${esc(fmtDate(r.published_at))}</td>
-      <td class="lx-src"><span class="genre-tag" style="--brand:${sourceBrand(r.source_name)}">${esc(r.source_name)}</span></td>
+      <td class="lx-src"><a class="genre-tag lx-srclink" style="--brand:${sourceBrand(r.source_name)}" href="${base}/list?source=${encodeURIComponent(r.source_name)}">${esc(r.source_name)}</a></td>
       <td class="lx-post"><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></td>
-      <td class="lx-orig"><a href="${esc(r.source_url)}" target="_blank" rel="noopener" aria-label="${esc(t.colOriginal)}">${icon('arrow-up-right')}</a></td>
+      <td class="lx-orig"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.og_title?.trim() || urlHost(r.source_url))}${icon('arrow-up-right')}</a></td>
     </tr>`,
     )
     .join('')
+  const activeChip = activeSource
+    ? `<p class="lx-active">${esc(t.colSource)}: <span class="genre-tag" style="--brand:${sourceBrand(activeSource)}">${esc(activeSource)}</span> <a class="lx-clear" href="${base}/list">${icon('x')}${esc(t.listAll)}</a></p>`
+    : ''
   const main = `
 <section class="page-head wrap">
   <h1>INDEX</h1>
-  <p class="count"><span id="lx-count">${rows.length}</span> / ${t.postsCount(rows.length)}</p>
+  <p class="count">${t.postsCount(rows.length)}</p>
+  ${activeChip}
 </section>
 <section class="list-section wrap" id="main">
-  <div class="lx-filters">${filters}</div>
   <div class="lx-wrap">
     <table class="lx-table">
       <thead>
@@ -174,11 +176,10 @@ export function renderListPage(rows: IndexRow[], lang: Lang): string {
       <tbody>${bodyRows}</tbody>
     </table>
   </div>
-</section>
-<script>${LIST_FILTER_SCRIPT}</script>`
+</section>`
   return layout(
     {
-      title: `Index | ${t.siteName}`,
+      title: activeSource ? `${activeSource} | Index | ${t.siteName}` : `Index | ${t.siteName}`,
       description: t.listDesc,
       canonicalPath: '/list',
       nav: 'index',

@@ -139,9 +139,11 @@ async function posts(c: Ctx, lang: Lang) {
 }
 
 async function listAll(c: Ctx, lang: Lang) {
-  const rows = await listAllArticles(c.env.DB)
+  const source = (c.req.query('source') ?? '').trim().slice(0, 40) || undefined
+  const rows = await listAllArticles(c.env.DB, source)
+  if (source && rows.length === 0) return c.notFound()
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderListPage(rows, lang))
+  return c.html(renderListPage(rows, lang, source))
 }
 
 async function search(c: Ctx, lang: Lang) {

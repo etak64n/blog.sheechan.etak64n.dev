@@ -11,6 +11,7 @@ export type ArticleRow = {
   emotion: string | null
   importance: number | null
   og_image: string | null
+  og_title: string | null
   source_url: string
   source_name: string
   tags: string
@@ -61,15 +62,20 @@ export type IndexRow = {
   title_en: string | null
   source_name: string
   source_url: string
+  og_title: string | null
   published_at: string
 }
 
-export async function listAllArticles(db: D1Database): Promise<IndexRow[]> {
-  const { results } = await db
-    .prepare(
-      'SELECT slug, title, title_en, source_name, source_url, published_at FROM articles ORDER BY published_at DESC',
-    )
-    .all<IndexRow>()
+// Every article for the Index table, newest first; optionally limited to one
+// source (the Index page filters by clicking a source).
+export async function listAllArticles(db: D1Database, source?: string): Promise<IndexRow[]> {
+  const cols = 'slug, title, title_en, source_name, source_url, og_title, published_at'
+  const stmt = source
+    ? db.prepare(
+        `SELECT ${cols} FROM articles WHERE source_name = ?1 ORDER BY published_at DESC`,
+      ).bind(source)
+    : db.prepare(`SELECT ${cols} FROM articles ORDER BY published_at DESC`)
+  const { results } = await stmt.all<IndexRow>()
   return results
 }
 
@@ -404,13 +410,13 @@ export async function upsertArticle(db: D1Database, a: Article): Promise<void> {
     .prepare(
       `INSERT INTO articles
          (slug, title, summary, body_md, title_en, summary_en, body_md_en,
-          emotion, source_url, source_name, tags, published_at, importance, og_image)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+          emotion, source_url, source_name, tags, published_at, importance, og_image, og_title)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
        ON CONFLICT (slug) DO UPDATE SET
          title = ?2, summary = ?3, body_md = ?4,
          title_en = ?5, summary_en = ?6, body_md_en = ?7, emotion = ?8,
          source_url = ?9, source_name = ?10, tags = ?11, published_at = ?12,
-         importance = ?13, og_image = ?14, updated_at = datetime('now')`,
+         importance = ?13, og_image = ?14, og_title = ?15, updated_at = datetime('now')`,
     )
     .bind(
       a.slug,
@@ -427,6 +433,7 @@ export async function upsertArticle(db: D1Database, a: Article): Promise<void> {
       a.published_at,
       a.importance ?? null,
       a.og_image ?? null,
+      a.og_title ?? null,
     )
     .run()
 }

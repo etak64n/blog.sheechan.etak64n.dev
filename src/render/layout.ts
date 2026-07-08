@@ -81,35 +81,6 @@ export const THEME_TOGGLE_SCRIPT = `
 })();
 `
 
-// Index page (/list) source filter: toggle rows on/off by source. Inline, so
-// its hash is added to the CSP alongside the theme scripts.
-export const LIST_FILTER_SCRIPT = `
-(function () {
-  var chips = document.querySelectorAll('.lx-filter');
-  var rows = document.querySelectorAll('.lx-row');
-  var out = document.getElementById('lx-count');
-  if (!chips.length) return;
-  var off = {};
-  function apply() {
-    var shown = 0;
-    for (var i = 0; i < rows.length; i++) {
-      var on = !off[rows[i].getAttribute('data-source')];
-      rows[i].hidden = !on;
-      if (on) shown++;
-    }
-    if (out) out.textContent = shown;
-  }
-  chips.forEach(function (c) {
-    c.addEventListener('click', function () {
-      var src = c.getAttribute('data-src');
-      off[src] = !off[src];
-      c.setAttribute('aria-pressed', off[src] ? 'false' : 'true');
-      apply();
-    });
-  });
-})();
-`
-
 // Strict CSP owned by the Worker (version-controlled, portable, and — unlike a
 // zone-level policy with 'unsafe-inline' — an actual XSS backstop). The two
 // inline scripts are allowed by their SHA-256 hashes, computed from the script
@@ -127,9 +98,7 @@ export let cspCache: string | undefined
 export async function contentSecurityPolicy(): Promise<string> {
   if (cspCache) return cspCache
   const hashes = await Promise.all(
-    [THEME_INIT_SCRIPT, THEME_TOGGLE_SCRIPT, LIST_FILTER_SCRIPT].map(
-      async (s) => `'sha256-${await sha256Base64(s)}'`,
-    ),
+    [THEME_INIT_SCRIPT, THEME_TOGGLE_SCRIPT].map(async (s) => `'sha256-${await sha256Base64(s)}'`),
   )
   cspCache = [
     "default-src 'self'",

@@ -49,6 +49,8 @@ export const articleSchema = z.object({
     .max(200)
     .regex(/^[A-Za-z0-9._-]+$/)
     .optional(),
+  // The source article's own title (shown in the Index table's original column).
+  og_title: z.string().max(300).refine(noRawHtml, mdRefine('raw HTML not allowed')).optional(),
   // Host allowlist is checked in the handler (list lives in wrangler.jsonc vars)
   source_url: z.url(),
   // Not an enum: sources will grow over time (watcher's sources.json is the source of truth)

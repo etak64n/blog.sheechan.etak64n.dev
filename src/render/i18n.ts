@@ -45,6 +45,7 @@ export type Strings = {
   colKind: string
   colPost: string
   colOriginal: string
+  listAll: string
   notFoundBody: string
   footerTag: string
   footerRight: string
@@ -95,6 +96,7 @@ export const T: Record<Lang, Strings> = {
     colKind: '種別',
     colPost: 'しぃちゃんの記事',
     colOriginal: '元の記事',
+    listAll: 'すべて表示',
     notFoundBody: 'ごめんね、このページは見つからなかったよ。',
     footerTag: 'shiichan blog — daily tech news, written by shiichan',
     footerRight: '毎日更新',
@@ -143,6 +145,7 @@ export const T: Record<Lang, Strings> = {
     colKind: 'Type',
     colPost: "Shii's post",
     colOriginal: 'Original',
+    listAll: 'All',
     notFoundBody: 'Sorry, this page could not be found.',
     footerTag: 'shiichan blog — daily tech news, written by shiichan',
     footerRight: 'Daily updates',
