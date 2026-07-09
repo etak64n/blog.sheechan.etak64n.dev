@@ -81,6 +81,22 @@ export const THEME_TOGGLE_SCRIPT = `
 })();
 `
 
+// Rewrites every <time class="ldate" datetime="…UTC…"> to the viewer's local
+// calendar date (YYYY-MM-DD). The stored timestamp is UTC; the browser's own
+// timezone does the conversion, so the same cached HTML localizes per visitor.
+export const LOCALIZE_DATES_SCRIPT = `
+(function () {
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  var els = document.querySelectorAll('time.ldate[datetime]');
+  for (var i = 0; i < els.length; i++) {
+    var d = new Date(els[i].getAttribute('datetime'));
+    if (!isNaN(d.getTime())) {
+      els[i].textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+  }
+})();
+`
+
 // Strict CSP owned by the Worker (version-controlled, portable, and — unlike a
 // zone-level policy with 'unsafe-inline' — an actual XSS backstop). The two
 // inline scripts are allowed by their SHA-256 hashes, computed from the script
@@ -98,7 +114,9 @@ export let cspCache: string | undefined
 export async function contentSecurityPolicy(): Promise<string> {
   if (cspCache) return cspCache
   const hashes = await Promise.all(
-    [THEME_INIT_SCRIPT, THEME_TOGGLE_SCRIPT].map(async (s) => `'sha256-${await sha256Base64(s)}'`),
+    [THEME_INIT_SCRIPT, THEME_TOGGLE_SCRIPT, LOCALIZE_DATES_SCRIPT].map(
+      async (s) => `'sha256-${await sha256Base64(s)}'`,
+    ),
   )
   cspCache = [
     "default-src 'self'",
@@ -265,6 +283,7 @@ ${main}
   </div>
 </footer>
 <script>${THEME_TOGGLE_SCRIPT}</script>
+<script>${LOCALIZE_DATES_SCRIPT}</script>
 </body>
 </html>`
 }

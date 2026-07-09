@@ -43,7 +43,7 @@ const LIST_COLUMNS =
 
 export async function listArticles(db: D1Database, limit = 100): Promise<ArticleListRow[]> {
   const { results } = await db
-    .prepare(`SELECT ${LIST_COLUMNS} FROM articles ORDER BY published_at DESC LIMIT ?`)
+    .prepare(`SELECT ${LIST_COLUMNS} FROM articles ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ?`)
     .bind(limit)
     .all<ArticleListRow>()
   return results
@@ -72,9 +72,9 @@ export async function listAllArticles(db: D1Database, source?: string): Promise<
   const cols = 'slug, title, title_en, source_name, source_url, og_title, published_at'
   const stmt = source
     ? db.prepare(
-        `SELECT ${cols} FROM articles WHERE source_name = ?1 ORDER BY published_at DESC`,
+        `SELECT ${cols} FROM articles WHERE source_name = ?1 ORDER BY published_at DESC, created_at DESC, rowid DESC`,
       ).bind(source)
-    : db.prepare(`SELECT ${cols} FROM articles ORDER BY published_at DESC`)
+    : db.prepare(`SELECT ${cols} FROM articles ORDER BY published_at DESC, created_at DESC, rowid DESC`)
   const { results } = await stmt.all<IndexRow>()
   return results
 }
@@ -85,7 +85,7 @@ export async function listArticlesPage(
   offset: number,
 ): Promise<ArticleListRow[]> {
   const { results } = await db
-    .prepare(`SELECT ${LIST_COLUMNS} FROM articles ORDER BY published_at DESC LIMIT ?1 OFFSET ?2`)
+    .prepare(`SELECT ${LIST_COLUMNS} FROM articles ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ?1 OFFSET ?2`)
     .bind(limit, offset)
     .all<ArticleListRow>()
   return results
@@ -147,7 +147,7 @@ export async function listArticlesByTag(
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM articles
        WHERE EXISTS (SELECT 1 FROM json_each(articles.tags) AS je WHERE je.value = ?1)
-       ORDER BY published_at DESC LIMIT ?2`,
+       ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ?2`,
     )
     .bind(tag, limit)
     .all<ArticleListRow>()
@@ -162,7 +162,7 @@ export async function listArticlesBySource(
   const { results } = await db
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM articles
-       WHERE source_name = ?1 ORDER BY published_at DESC LIMIT ?2`,
+       WHERE source_name = ?1 ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ?2`,
     )
     .bind(name, limit)
     .all<ArticleListRow>()
@@ -254,7 +254,7 @@ async function searchArticlesLike(
   const { results } = await db
     .prepare(
       `SELECT ${LIST_COLUMNS}, NULL AS snip FROM articles
-       WHERE ${where} ORDER BY published_at DESC LIMIT ${limit}`,
+       WHERE ${where} ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ${limit}`,
     )
     .bind(...escaped.map((t) => `%${t}%`))
     .all<SearchHit>()
@@ -278,7 +278,7 @@ export async function searchArticlesEn(
   const { results } = await db
     .prepare(
       `SELECT ${LIST_COLUMNS}, NULL AS snip FROM articles
-       WHERE ${where} ORDER BY published_at DESC LIMIT ${limit}`,
+       WHERE ${where} ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ${limit}`,
     )
     .bind(...terms.map((t) => `%${t}%`))
     .all<SearchHit>()
@@ -316,7 +316,7 @@ export async function listArticlesByDay(
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM articles
        WHERE substr(published_at, 1, 10) = ?1
-       ORDER BY published_at DESC ${lim}`,
+       ORDER BY published_at DESC, created_at DESC, rowid DESC ${lim}`,
     )
     .bind(date)
     .all<ArticleListRow>()
@@ -342,7 +342,7 @@ export async function listArticlesByMonth(
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM articles
        WHERE substr(published_at, 1, 7) = ?1
-       ORDER BY published_at DESC LIMIT ?2`,
+       ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ?2`,
     )
     .bind(month, limit)
     .all<ArticleListRow>()
@@ -390,7 +390,7 @@ export async function listRelated(
     const { results } = await db
       .prepare(
         `SELECT ${LIST_COLUMNS} FROM articles
-         WHERE slug != ?1 ORDER BY published_at DESC LIMIT ${limit + 1}`,
+         WHERE slug != ?1 ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ${limit + 1}`,
       )
       .bind(slug)
       .all<ArticleListRow>()

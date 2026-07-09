@@ -2,7 +2,7 @@
 
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
-import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, parseTags, sourceBrand } from './helpers'
+import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtFullDate, fmtMonth, heroImage, icon, localDate, parseTags, sourceBrand } from './helpers'
 import { layout } from './layout'
 import { DAY_MOBILE_SHOWN, type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
 import { type ArticleListRow, type ArticleRow, type IndexRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
@@ -146,7 +146,7 @@ export function renderListPage(rows: IndexRow[], lang: Lang, activeSource?: stri
     .map(
       (r) => `
     <tr class="lx-row">
-      <td class="lx-date">${esc(fmtDate(r.published_at))}</td>
+      <td class="lx-date">${localDate(r.published_at)}</td>
       <td class="lx-src"><a class="genre-tag lx-srclink" style="--brand:${sourceBrand(r.source_name)}" href="${base}/list?source=${encodeURIComponent(r.source_name)}">${esc(r.source_name)}</a></td>
       <td class="lx-post"><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></td>
       <td class="lx-orig"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.og_title?.trim() || urlHost(r.source_url))}${icon('arrow-up-right')}</a></td>
@@ -504,7 +504,7 @@ export async function renderArticlePage(
       <h1 class="article-title">${esc(title)}</h1>
       <div class="article-meta">
         ${sourceCatChip(base, row.source_name)}
-        <span class="meta-date">${esc(fmtDate(row.published_at))}</span>
+        <span class="meta-date">${localDate(row.published_at)}</span>
         ${stars(row.importance)}
         <span class="spacer"></span>
         <a class="metabtn" href="${esc(mdPath)}">${icon('file-code')}${lang === 'en' ? 'View Markdown' : 'Markdown で見る'}</a>

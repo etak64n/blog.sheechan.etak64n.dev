@@ -1,7 +1,7 @@
 // Reusable UI pieces: article cards, chips, badges, Hot Topics rail.
 
 import { type Lang, T } from './i18n'
-import { artTitle, basePath, esc, fmtDate, heroImage, icon, sourceBrand, sourceColor, sourceVendor } from './helpers'
+import { artTitle, basePath, esc, fmtDate, heroImage, icon, localDate, sourceBrand, sourceColor, sourceVendor } from './helpers'
 import { type ArticleListRow, SNIP_CLOSE, SNIP_OPEN, type SourceCount, type TagCount } from '../db'
 
 export function tagChip(base: string, tag: string, count?: number, big = false): string {
@@ -89,7 +89,7 @@ export function articleCard(
     <span class="genre-tag" style="--brand:${brand}">${esc(r.source_name)}</span>
     <h3><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></h3>
     ${summary}
-    <p class="card-meta">${stars(r.importance)}<span class="card-date">${esc(fmtDate(r.published_at))}</span></p>
+    <p class="card-meta">${stars(r.importance)}<span class="card-date">${localDate(r.published_at)}</span></p>
   </div>
 </article>`
 }
@@ -154,7 +154,7 @@ export function hotTopicsPanel(
           <span class="hot-cat" style="--brand:${sourceBrand(r.source_name)}">${esc(r.source_name)}</span>
         </span>
         <span class="hot-title">${esc(artTitle(r, lang))}</span>
-        <span class="hot-meta">${stars(r.importance)}<span class="hot-date">${esc(fmtDate(r.published_at))}</span></span>
+        <span class="hot-meta">${stars(r.importance)}<span class="hot-date">${localDate(r.published_at)}</span></span>
       </a>
     </li>`
     })

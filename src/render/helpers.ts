@@ -63,6 +63,13 @@ export function autospaceHtml(html: string): string {
 
 export const fmtDate = (iso: string) => iso.slice(0, 10)
 
+// Render a stored UTC timestamp as a <time> element. The SSR text is the UTC
+// date (graceful no-JS fallback); the LOCALIZE_DATES client script rewrites it
+// to the viewer's local date. Keeping the HTML timezone-neutral means edge
+// caching still works — each visitor's browser localizes the same cached HTML.
+export const localDate = (iso: string) =>
+  `<time class="ldate" datetime="${attr(iso)}">${esc(fmtDate(iso))}</time>`
+
 // ---- i18n ----
 
 export const EN_MONTHS = [

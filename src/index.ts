@@ -14,7 +14,6 @@ import {
   listArticlesPage,
   listHotTopics,
   listMonths,
-  listRecentDays,
   listPopular,
   listRelated,
   listSources,
@@ -123,23 +122,31 @@ async function home(c: Ctx, lang: Lang) {
   // Cloudflare resolves the visitor's IANA timezone from geo-IP (request.cf);
   // fall back to Asia/Tokyo when it's unavailable (e.g. local dev).
   const tz = (c.req.raw as { cf?: { timezone?: string } }).cf?.timezone || 'Asia/Tokyo'
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date())
-  const since = new Date(Date.parse(`${today}T00:00:00Z`) - (HOME_DAYS - 1) * 86400 * 1000)
-    .toISOString()
-    .slice(0, 10)
-  const [recentDays, tags, sources, hotTopics] = await Promise.all([
-    listRecentDays(c.env.DB, HOME_DAYS, since),
+  // 'en-CA' formats as YYYY-MM-DD; with timeZone it yields the *local* calendar
+  // date for a UTC instant. Group articles by their local date so the day rows
+  // (and their headers) match the viewer's timezone, not UTC.
+  const localFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz })
+  const today = localFmt.format(new Date())
+  const localDays = Array.from({ length: HOME_DAYS }, (_, i) =>
+    new Date(Date.parse(`${today}T00:00:00Z`) - i * 86400 * 1000).toISOString().slice(0, 10),
+  )
+  const [recent, tags, sources, hotTopics] = await Promise.all([
+    listArticles(c.env.DB, 200),
     listTags(c.env.DB),
     listSources(c.env.DB),
     listHotTopics(c.env.DB, 10),
   ])
-  const days = await Promise.all(
-    recentDays.map(async (date) => {
-      // fetch one extra to detect whether there are more than HOME_PER_DAY
-      const arts = await listArticlesByDay(c.env.DB, date, HOME_PER_DAY + 1)
-      return { date, articles: arts.slice(0, HOME_PER_DAY), hasMore: arts.length > HOME_PER_DAY }
-    }),
-  )
+  const byDay = new Map<string, typeof recent>()
+  for (const a of recent) {
+    const d = localFmt.format(new Date(a.published_at))
+    const arr = byDay.get(d)
+    if (arr) arr.push(a)
+    else byDay.set(d, [a])
+  }
+  const days = localDays.map((date) => {
+    const arts = byDay.get(date) ?? []
+    return { date, articles: arts.slice(0, HOME_PER_DAY), hasMore: arts.length > HOME_PER_DAY }
+  })
   c.header('cache-control', 'public, max-age=300')
   return c.html(renderIndexPage({ days, tags, sources, hotTopics }, lang))
 }
