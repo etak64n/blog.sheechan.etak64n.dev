@@ -89,6 +89,12 @@ export function fmtMonth(month: string, lang: Lang): string {
   return lang === 'en' ? `${EN_MONTHS[Number(m) - 1]} ${y}` : `${y}年${Number(m)}月`
 }
 
+// '2026-07' -> '7月' (ja) / 'July' (en). Month only; year is shown on the axis.
+export function fmtMonthShort(month: string, lang: Lang): string {
+  const m = Number(month.split('-')[1])
+  return lang === 'en' ? EN_MONTHS[m - 1] : `${m}月`
+}
+
 // '2026-07-07' -> '2026年7月7日' (ja) / 'July 7, 2026' (en)
 export function fmtFullDate(date: string, lang: Lang): string {
   const [y, m, d] = date.split('-')

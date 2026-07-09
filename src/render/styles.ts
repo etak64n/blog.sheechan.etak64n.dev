@@ -322,6 +322,10 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 1000px) { .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 460px) { .card-grid { grid-template-columns: 1fr; } }
+/* Home "Latest News" grid: 3 across (independent of the 4-up .card-grid) */
+.latest-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 720px) { .latest-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 460px) { .latest-grid { grid-template-columns: 1fr; } }
 .card {
   position: relative; display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--line); border-radius: 0;
@@ -677,15 +681,65 @@ button { -webkit-tap-highlight-color: transparent; }
 .search-hint { color: var(--muted); font-size: .9rem; }
 
 /* ---- archive ---- */
-.month-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
-.month-list a {
-  display: flex; align-items: baseline; gap: .8em; background: var(--surface);
-  border: 1px solid var(--line); border-radius: 0; padding: 1em 1.3em; text-decoration: none;
-  color: var(--text); box-shadow: var(--shadow-soft); transition: transform .15s ease, box-shadow .15s ease;
+/* ---- Archive timeline: a vertical axis on the left carries the year/month
+   markers; each month links out to a block on the right. The axis line is a
+   single pseudo-element on .tl so it runs unbroken behind every node. ---- */
+.tl { position: relative; max-width: 620px; margin: 0 auto; }
+.tl::before {
+  content: ''; position: absolute; top: 10px; bottom: 10px; left: 63px; width: 2px;
+  background: var(--line); border-radius: 2px;
 }
-.month-list a:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
-.month-list .m { font-family: var(--mono); font-weight: 600; color: var(--primary); white-space: nowrap; }
-.month-list .n { margin-left: auto; font-family: var(--mono); font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.tl-group { position: relative; }
+.tl-year { position: relative; display: flex; align-items: baseline; gap: .7em; margin: 30px 0 12px; }
+.tl-group:first-child .tl-year { margin-top: 6px; }
+/* Year marker: a filled diamond straddling the axis (axis centre is at 64px). */
+.tl-year::before {
+  content: ''; position: absolute; left: 57px; top: .3em; width: 13px; height: 13px;
+  background: var(--primary); box-shadow: 0 0 0 4px var(--bg); transform: rotate(45deg);
+}
+.tl-year b {
+  margin-left: 80px; font-family: var(--mono); font-weight: 700; font-size: 1.2rem;
+  letter-spacing: .06em; color: var(--heading);
+}
+.tl-year-sub { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+.tl-item {
+  position: relative; display: grid; grid-template-columns: 64px 1fr; align-items: stretch;
+  text-decoration: none; color: inherit;
+}
+.tl-item + .tl-item { margin-top: 10px; }
+/* Month tick: the 'MM' number sitting left of the axis (ends ~16px before it). */
+.tl-tick {
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 16px;
+  font-family: var(--mono); font-weight: 600; font-size: .95rem; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Node dot centred on the axis (64px); background matches page to mask the line. */
+.tl-item::before {
+  content: ''; position: absolute; left: 58px; top: 50%; transform: translateY(-50%);
+  width: 11px; height: 11px; border-radius: 50%; background: var(--bg);
+  border: 2px solid var(--line-strong); transition: border-color .15s ease, background .15s ease;
+}
+.tl-item:hover::before, .tl-item:focus-visible::before { border-color: var(--primary); background: var(--primary); }
+.tl-block {
+  display: flex; align-items: center; gap: .7em; margin-left: 16px; padding: .85em 1.15em;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-soft);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.tl-item:hover .tl-block { transform: translateX(3px); box-shadow: var(--shadow-lift); border-color: var(--line-strong); }
+.tl-month { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--heading); }
+.tl-count { font-family: var(--mono); font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.tl-go { margin-left: auto; display: inline-flex; color: var(--muted); transition: color .15s ease, transform .15s ease; }
+.tl-go svg { width: 16px; height: 16px; }
+.tl-item:hover .tl-go { color: var(--primary); transform: translateX(3px); }
+@media (max-width: 460px) {
+  .tl::before { left: 47px; }
+  .tl-year::before { left: 41px; }
+  .tl-year b { margin-left: 62px; }
+  .tl-item { grid-template-columns: 48px 1fr; }
+  .tl-tick { padding-right: 14px; font-size: .88rem; }
+  .tl-item::before { left: 42px; }
+  .tl-block { margin-left: 14px; }
+}
 
 /* ---- page head / misc ---- */
 .page-head { padding-top: 44px; padding-bottom: 8px; }

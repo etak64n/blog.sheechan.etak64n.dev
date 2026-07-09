@@ -2,7 +2,7 @@
 
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
-import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, localDateLink, parseTags, sourceBrand } from './helpers'
+import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, fmtMonthShort, heroImage, icon, localDateLink, parseTags, sourceBrand } from './helpers'
 import { layout } from './layout'
 import { type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
 import { type ArticleListRow, type ArticleRow, type IndexRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
@@ -33,7 +33,7 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
     ? `
 <section class="latest-block">
   <h2 class="section-title">${esc(t.latestNews)}</h2>
-  <div class="card-grid">${latest.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+  <div class="latest-grid">${latest.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
 </section>
 <p class="viewall"><a class="viewall-btn" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
     : '<p>No articles yet.</p>'
@@ -308,19 +308,48 @@ export function renderArchiveIndexPage(months: MonthCount[], lang: Lang): string
   const t = T[lang]
   const base = basePath(lang)
   const total = months.reduce((sum, m) => sum + m.count, 0)
-  const list = months
-    .map(
-      (m) =>
-        `<li><a href="${base}/archive/${esc(m.month)}"><b class="m">${esc(m.month)}</b>${fmtMonth(m.month, lang)}<span class="n">${t.postsCount(m.count)}</span></a></li>`,
-    )
-    .join('\n')
+  // months arrive newest-first and grouped-contiguous by year, so a single pass
+  // partitions them into per-year buckets in descending order.
+  const years: { year: string; months: MonthCount[] }[] = []
+  for (const m of months) {
+    const year = m.month.slice(0, 4)
+    const last = years[years.length - 1]
+    if (last && last.year === year) last.months.push(m)
+    else years.push({ year, months: [m] })
+  }
+  const timeline = years
+    .map((g) => {
+      const yearTotal = g.months.reduce((sum, m) => sum + m.count, 0)
+      const rows = g.months
+        .map(
+          (m) => `
+      <a class="tl-item" href="${base}/archive/${esc(m.month)}">
+        <span class="tl-tick">${esc(m.month.slice(5))}</span>
+        <span class="tl-block">
+          <span class="tl-month">${esc(fmtMonthShort(m.month, lang))}</span>
+          <span class="tl-count">${t.postsCount(m.count)}</span>
+          <span class="tl-go" aria-hidden="true">${icon('arrow-right')}</span>
+        </span>
+      </a>`,
+        )
+        .join('')
+      return `
+    <div class="tl-group">
+      <div class="tl-year">
+        <b>${esc(g.year)}</b>
+        <span class="tl-year-sub">${t.postsCount(yearTotal)}</span>
+      </div>
+      ${rows}
+    </div>`
+    })
+    .join('')
   const main = `
 <section class="page-head wrap">
   <h1>ARCHIVE</h1>
   <p class="count">${t.monthsCount(months.length, total)}</p>
 </section>
 <section class="list-section wrap" id="main">
-  <ul class="month-list">${list}</ul>
+  <div class="tl">${timeline}</div>
 </section>`
   return layout(
     {
