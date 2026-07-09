@@ -323,6 +323,24 @@ export async function listArticlesByDay(
   return results
 }
 
+// Articles whose UTC published_at falls in [startISO, endISO). Used by the day
+// page to gather a window it then filters to the viewer's local calendar date.
+export async function listArticlesBetween(
+  db: D1Database,
+  startISO: string,
+  endISO: string,
+): Promise<ArticleListRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT ${LIST_COLUMNS} FROM articles
+       WHERE published_at >= ?1 AND published_at < ?2
+       ORDER BY published_at DESC, created_at DESC, rowid DESC`,
+    )
+    .bind(startISO, endISO)
+    .all<ArticleListRow>()
+  return results
+}
+
 export async function listMonths(db: D1Database): Promise<MonthCount[]> {
   const { results } = await db
     .prepare(

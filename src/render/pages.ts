@@ -2,17 +2,17 @@
 
 import { marked } from 'marked'
 import { type Lang, T } from './i18n'
-import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtFullDate, fmtMonth, heroImage, icon, localDate, parseTags, sourceBrand } from './helpers'
+import { SITE_ORIGIN, WAVE_DIVIDER, artBody, artSummary, artTitle, autospace, autospaceHtml, basePath, esc, fmtDate, fmtFullDate, fmtMonth, heroImage, icon, localDateLink, parseTags, sourceBrand } from './helpers'
 import { layout } from './layout'
-import { DAY_MOBILE_SHOWN, type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
+import { type IndexData, articleCard, externalLinkCard, hotTopicsPanel, snippetHtml, sourceBadge, sourceCatChip, stars, tagChip } from './components'
 import { type ArticleListRow, type ArticleRow, type IndexRow, type MonthCount, type SearchHit, type SourceCount, type TagCount } from '../db'
 
 export function renderIndexPage(data: IndexData, lang: Lang): string {
-  const { days, tags, sources, hotTopics } = data
+  const { latest, tags, sources, hotTopics } = data
   const t = T[lang]
   const base = basePath(lang)
-  // Hot Topics items published on one of the recent days shown get a NEW badge
-  const recentDates = new Set(days.map((g) => g.date))
+  // Hot Topics items among the latest batch shown get a NEW badge
+  const recentDates = new Set(latest.map((r) => fmtDate(r.published_at)))
 
   const hero = `
 <img class="hero-banner" src="/hero.webp" srcset="/hero-800.webp 800w, /hero-1200.webp 1200w, /hero.webp 1731w"
@@ -27,21 +27,14 @@ export function renderIndexPage(data: IndexData, lang: Lang): string {
   </div>
 </section>`
 
-  // Each recent day is a horizontal, scrollable row of cards (3 across); on
-  // small screens the row collapses to the first few cards plus a "more" link
-  // to that day's page. The newest post overall carries a LATEST ribbon.
-  const mainCol = days.length
-    ? `${days
-        .map((g, gi) => {
-          const collapses = g.articles.length > DAY_MOBILE_SHOWN
-          return `
-<section class="day-block">
-  <h2 class="section-title"><a class="day-link" href="${base}/day/${g.date}">${fmtFullDate(g.date, lang)}</a></h2>
-  <div class="day-row">${g.articles.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
-  ${collapses ? `<p class="more-row day-more"><a class="panel-more" href="${base}/day/${g.date}">${t.more} ${icon('arrow-up-right')}</a></p>` : ''}
-</section>`
-        })
-        .join('\n')}
+  // A single "Latest News" section: the newest articles as a responsive grid of
+  // cards (newest overall carries the LATEST ribbon).
+  const mainCol = latest.length
+    ? `
+<section class="latest-block">
+  <h2 class="section-title">${esc(t.latestNews)}</h2>
+  <div class="card-grid">${latest.map((r, i) => articleCard(r, i, lang)).join('\n')}</div>
+</section>
 <p class="viewall"><a class="viewall-btn" href="${base}/posts">${esc(t.viewAll)} ${icon('arrow-up-right')}</a></p>`
     : '<p>No articles yet.</p>'
 
@@ -146,7 +139,7 @@ export function renderListPage(rows: IndexRow[], lang: Lang, activeSource?: stri
     .map(
       (r) => `
     <tr class="lx-row">
-      <td class="lx-date">${localDate(r.published_at)}</td>
+      <td class="lx-date">${localDateLink(r.published_at, base)}</td>
       <td class="lx-src"><a class="genre-tag lx-srclink" style="--brand:${sourceBrand(r.source_name)}" href="${base}/list?source=${encodeURIComponent(r.source_name)}">${esc(r.source_name)}</a></td>
       <td class="lx-post"><a href="${base}/posts/${esc(r.slug)}">${esc(artTitle(r, lang))}</a></td>
       <td class="lx-orig"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.og_title?.trim() || urlHost(r.source_url))}${icon('arrow-up-right')}</a></td>
@@ -504,7 +497,7 @@ export async function renderArticlePage(
       <h1 class="article-title">${esc(title)}</h1>
       <div class="article-meta">
         ${sourceCatChip(base, row.source_name)}
-        <span class="meta-date">${localDate(row.published_at)}</span>
+        <span class="meta-date">${localDateLink(row.published_at, base)}</span>
         ${stars(row.importance)}
         <span class="spacer"></span>
         <a class="metabtn" href="${esc(mdPath)}">${icon('file-code')}${lang === 'en' ? 'View Markdown' : 'Markdown で見る'}</a>

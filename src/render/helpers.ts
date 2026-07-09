@@ -70,6 +70,12 @@ export const fmtDate = (iso: string) => iso.slice(0, 10)
 export const localDate = (iso: string) =>
   `<time class="ldate" datetime="${attr(iso)}">${esc(fmtDate(iso))}</time>`
 
+// A localized date that links to that day's list page. The href uses the UTC
+// date for SSR; the LOCALIZE_DATES client script rewrites both the text and the
+// href to the viewer's local date so the label and its /day target agree.
+export const localDateLink = (iso: string, base: string) =>
+  `<a class="dlink" href="${base}/day/${esc(fmtDate(iso))}">${localDate(iso)}</a>`
+
 // ---- i18n ----
 
 export const EN_MONTHS = [

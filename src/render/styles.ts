@@ -353,6 +353,10 @@ button { -webkit-tap-highlight-color: transparent; }
   font-family: var(--mono); font-size: .72rem; color: var(--muted);
 }
 .card-date { color: var(--muted); }
+/* Date-as-link: keep the muted date colour, reveal it's clickable on hover */
+.dlink { color: inherit; text-decoration: none; }
+.dlink:hover { text-decoration: underline; text-underline-offset: 2px; }
+.latest-block .section-title { margin: .2em 0 .9em; }
 .stars { color: #F5A623; letter-spacing: 1.5px; font-size: .9rem; line-height: 1; white-space: nowrap; }
 .card .stars { font-size: 1.15rem; }
 .card .summary {

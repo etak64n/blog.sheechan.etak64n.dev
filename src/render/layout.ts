@@ -90,8 +90,13 @@ export const LOCALIZE_DATES_SCRIPT = `
   var els = document.querySelectorAll('time.ldate[datetime]');
   for (var i = 0; i < els.length; i++) {
     var d = new Date(els[i].getAttribute('datetime'));
-    if (!isNaN(d.getTime())) {
-      els[i].textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    if (isNaN(d.getTime())) continue;
+    var local = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    els[i].textContent = local;
+    var a = els[i].closest('a.dlink');
+    if (a) {
+      var href = a.getAttribute('href');
+      if (href) a.setAttribute('href', href.replace(/\\/day\\/[^/]+$/, '/day/' + local));
     }
   }
 })();

@@ -24,6 +24,7 @@ export type Strings = {
   sources: string
   tags: string
   archive: string
+  latestNews: string
   viewAll: string
   allTags: string
   allMonths: string
@@ -75,6 +76,7 @@ export const T: Record<Lang, Strings> = {
     sources: 'Sources',
     tags: 'Tags',
     archive: 'Archive',
+    latestNews: 'Latest News',
     viewAll: '全ての記事を見る',
     allTags: 'ALL TAGS',
     allMonths: 'ALL MONTHS',
@@ -124,6 +126,7 @@ export const T: Record<Lang, Strings> = {
     sources: 'Sources',
     tags: 'Tags',
     archive: 'Archive',
+    latestNews: 'Latest News',
     viewAll: 'View all posts',
     allTags: 'ALL TAGS',
     allMonths: 'ALL MONTHS',

@@ -7,7 +7,7 @@ import {
   getArticle,
   listAllArticles,
   listArticles,
-  listArticlesByDay,
+  listArticlesBetween,
   listArticlesByMonth,
   listArticlesByTag,
   listArticlesBySource,
@@ -75,10 +75,8 @@ app.use('*', async (c, next) => {
 
 // ---- public pages (registered for both '' (ja) and '/en' (en)) ----
 
-const HOME_DAYS = 4
-// Cards loaded per day for the home page's horizontal scroll row (4 show at
-// full width; the rest are reachable by scrolling, or via the day page on mobile)
-const HOME_PER_DAY = 8
+// Number of newest articles shown in the home page's "Latest News" grid.
+const HOME_LATEST = 12
 const POPULAR_LIMIT = 40
 type Lang = 'ja' | 'en'
 type Ctx = Context<{ Bindings: Env }>
@@ -117,38 +115,17 @@ async function edgeCached(
 }
 
 async function home(c: Ctx, lang: Lang) {
-  // Show the last HOME_DAYS calendar days relative to the visitor's *local*
-  // date, not simply the most recent days that happen to have articles.
-  // Cloudflare resolves the visitor's IANA timezone from geo-IP (request.cf);
-  // fall back to Asia/Tokyo when it's unavailable (e.g. local dev).
-  const tz = (c.req.raw as { cf?: { timezone?: string } }).cf?.timezone || 'Asia/Tokyo'
-  // 'en-CA' formats as YYYY-MM-DD; with timeZone it yields the *local* calendar
-  // date for a UTC instant. Group articles by their local date so the day rows
-  // (and their headers) match the viewer's timezone, not UTC.
-  const localFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz })
-  const today = localFmt.format(new Date())
-  const localDays = Array.from({ length: HOME_DAYS }, (_, i) =>
-    new Date(Date.parse(`${today}T00:00:00Z`) - i * 86400 * 1000).toISOString().slice(0, 10),
-  )
-  const [recent, tags, sources, hotTopics] = await Promise.all([
-    listArticles(c.env.DB, 200),
+  // "Latest News": the newest HOME_LATEST articles as a flat grid. Dates are
+  // localized client-side, so this HTML is timezone-neutral (unlike the old
+  // day-grouped layout) — safe to keep on a short cache.
+  const [latest, tags, sources, hotTopics] = await Promise.all([
+    listArticles(c.env.DB, HOME_LATEST),
     listTags(c.env.DB),
     listSources(c.env.DB),
     listHotTopics(c.env.DB, 10),
   ])
-  const byDay = new Map<string, typeof recent>()
-  for (const a of recent) {
-    const d = localFmt.format(new Date(a.published_at))
-    const arr = byDay.get(d)
-    if (arr) arr.push(a)
-    else byDay.set(d, [a])
-  }
-  const days = localDays.map((date) => {
-    const arts = byDay.get(date) ?? []
-    return { date, articles: arts.slice(0, HOME_PER_DAY), hasMore: arts.length > HOME_PER_DAY }
-  })
   c.header('cache-control', 'public, max-age=300')
-  return c.html(renderIndexPage({ days, tags, sources, hotTopics }, lang))
+  return c.html(renderIndexPage({ latest, tags, sources, hotTopics }, lang))
 }
 
 async function popular(c: Ctx, lang: Lang) {
@@ -159,9 +136,18 @@ async function popular(c: Ctx, lang: Lang) {
 async function dayPage(c: Ctx, lang: Lang) {
   const date = c.req.param('date') ?? ''
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.notFound()
-  const articles = await listArticlesByDay(c.env.DB, date)
+  // The date links carry the viewer's *local* calendar date. Gather a UTC window
+  // wide enough to cover that local day under any offset, then keep only the
+  // articles whose local date matches. TZ-dependent, so this route isn't cached.
+  const tz = (c.req.raw as { cf?: { timezone?: string } }).cf?.timezone || 'Asia/Tokyo'
+  const localFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz })
+  const startUTC = new Date(Date.parse(`${date}T00:00:00Z`) - 86400 * 1000).toISOString()
+  const endUTC = new Date(Date.parse(`${date}T00:00:00Z`) + 2 * 86400 * 1000).toISOString()
+  const window = await listArticlesBetween(c.env.DB, startUTC, endUTC)
+  const articles = window.filter((r) => localFmt.format(new Date(r.published_at)) === date)
   if (articles.length === 0) return c.notFound()
-  return edgeCached(c, () => c.html(renderDayPage(date, articles, lang)))
+  c.header('cache-control', 'public, max-age=300')
+  return c.html(renderDayPage(date, articles, lang))
 }
 
 const POSTS_PER_PAGE = 28
