@@ -61,18 +61,21 @@ export function autospaceHtml(html: string): string {
   )
 }
 
-export const fmtDate = (iso: string) => iso.slice(0, 10)
+// The whole site renders dates in a single fixed timezone (JST, UTC+9, no DST),
+// so the same cached HTML is correct for everyone and needs no client-side
+// rewrite. published_at is stored UTC; shift by +9h and take the calendar date.
+const SITE_TZ_OFFSET_MS = 9 * 60 * 60 * 1000
+export const fmtDate = (iso: string) =>
+  new Date(new Date(iso).getTime() + SITE_TZ_OFFSET_MS).toISOString().slice(0, 10)
 
-// Render a stored UTC timestamp as a <time> element. The SSR text is the UTC
-// date (graceful no-JS fallback); the LOCALIZE_DATES client script rewrites it
-// to the viewer's local date. Keeping the HTML timezone-neutral means edge
-// caching still works — each visitor's browser localizes the same cached HTML.
+// Render a stored UTC timestamp as a <time> element whose text is the JST date.
+// datetime keeps the machine-readable UTC instant; the visible text is already
+// localized server-side, so edge caching serves one correct copy to everyone.
 export const localDate = (iso: string) =>
-  `<time class="ldate" datetime="${attr(iso)}">${esc(fmtDate(iso))}</time>`
+  `<time datetime="${attr(iso)}">${esc(fmtDate(iso))}</time>`
 
-// A localized date that links to that day's list page. The href uses the UTC
-// date for SSR; the LOCALIZE_DATES client script rewrites both the text and the
-// href to the viewer's local date so the label and its /day target agree.
+// A JST date that links to that day's list page; label and /day target agree
+// because both come from fmtDate.
 export const localDateLink = (iso: string, base: string) =>
   `<a class="dlink" href="${base}/day/${esc(fmtDate(iso))}">${localDate(iso)}</a>`
 

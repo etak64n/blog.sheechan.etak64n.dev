@@ -136,11 +136,10 @@ async function popular(c: Ctx, lang: Lang) {
 async function dayPage(c: Ctx, lang: Lang) {
   const date = c.req.param('date') ?? ''
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return c.notFound()
-  // The date links carry the viewer's *local* calendar date. Gather a UTC window
-  // wide enough to cover that local day under any offset, then keep only the
-  // articles whose local date matches. TZ-dependent, so this route isn't cached.
-  const tz = (c.req.raw as { cf?: { timezone?: string } }).cf?.timezone || 'Asia/Tokyo'
-  const localFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz })
+  // The date links carry the site's fixed-JST calendar date. Gather a UTC window
+  // wide enough to cover that JST day, then keep only the articles whose JST date
+  // matches. Fixed timezone, so the same HTML is correct for every visitor.
+  const localFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' })
   const startUTC = new Date(Date.parse(`${date}T00:00:00Z`) - 86400 * 1000).toISOString()
   const endUTC = new Date(Date.parse(`${date}T00:00:00Z`) + 2 * 86400 * 1000).toISOString()
   const window = await listArticlesBetween(c.env.DB, startUTC, endUTC)

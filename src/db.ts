@@ -341,10 +341,12 @@ export async function listArticlesBetween(
   return results
 }
 
+// Archive months are bucketed by JST calendar month (site-wide fixed timezone),
+// so an article at 2026-06-30T23:00Z lands in July like its displayed date.
 export async function listMonths(db: D1Database): Promise<MonthCount[]> {
   const { results } = await db
     .prepare(
-      `SELECT substr(published_at, 1, 7) AS month, COUNT(*) AS count
+      `SELECT substr(datetime(published_at, '+9 hours'), 1, 7) AS month, COUNT(*) AS count
        FROM articles GROUP BY month ORDER BY month DESC`,
     )
     .all<MonthCount>()
@@ -359,7 +361,7 @@ export async function listArticlesByMonth(
   const { results } = await db
     .prepare(
       `SELECT ${LIST_COLUMNS} FROM articles
-       WHERE substr(published_at, 1, 7) = ?1
+       WHERE substr(datetime(published_at, '+9 hours'), 1, 7) = ?1
        ORDER BY published_at DESC, created_at DESC, rowid DESC LIMIT ?2`,
     )
     .bind(month, limit)
